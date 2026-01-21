@@ -19,7 +19,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images' | 'documents'>('widgets')
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string | React.ReactNode } | null>(null)
 
   useEffect(() => {
     loadContent()
@@ -64,10 +64,42 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         setTimeout(() => setMessage(null), 3000)
       } else {
         const errorData = await response.json().catch(() => ({}))
-        const errorMsg = errorData?.error || errorData?.details || 'Error al guardar el contenido'
         console.error('Error al guardar:', errorData)
-        setMessage({ type: 'error', text: errorMsg })
-        setTimeout(() => setMessage(null), 5000)
+        
+        // Si es error de KV no configurado, mostrar mensaje detallado
+        if (errorData?.error === 'Vercel KV no está configurado' || errorData?.solution?.includes('Vercel KV')) {
+          const instructions = errorData?.instructions || []
+          const errorMsg = (
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
+                {errorData.error || 'Vercel KV no está configurado'}
+              </div>
+              <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem', opacity: 0.9 }}>
+                {errorData.details}
+              </div>
+              {instructions.length > 0 && (
+                <div style={{ fontSize: '0.85rem', marginTop: '0.75rem', paddingLeft: '1rem' }}>
+                  <strong>Pasos para configurar:</strong>
+                  <ol style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                    {instructions.map((step: string, idx: number) => (
+                      <li key={idx} style={{ marginBottom: '0.25rem' }}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              {errorData.hint && (
+                <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', fontStyle: 'italic', opacity: 0.8 }}>
+                  💡 {errorData.hint}
+                </div>
+              )}
+            </div>
+          )
+          setMessage({ type: 'error', text: errorMsg as any })
+        } else {
+          const errorMsg = errorData?.error || errorData?.details || 'Error al guardar el contenido'
+          setMessage({ type: 'error', text: errorMsg })
+        }
+        setTimeout(() => setMessage(null), 10000) // Más tiempo para leer las instrucciones
       }
     } catch (error: any) {
       console.error('Error al guardar el contenido:', error)
@@ -343,22 +375,24 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
           {message && (
             <div
               style={{
-                padding: '1rem',
+                padding: '1.5rem',
                 background: message.type === 'success' 
                   ? 'rgba(16, 185, 129, 0.3)' 
                   : 'rgba(239, 68, 68, 0.3)',
                 color: 'white',
                 borderRadius: '8px',
                 marginBottom: '1rem',
-                textAlign: 'center',
+                textAlign: typeof message.text === 'string' ? 'center' : 'left',
                 border: `1px solid ${message.type === 'success' 
                   ? 'rgba(16, 185, 129, 0.5)' 
                   : 'rgba(239, 68, 68, 0.5)'}`,
                 backdropFilter: 'blur(10px)',
                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+                maxWidth: '100%',
+                overflow: 'auto',
               }}
             >
-              {message.text}
+              {typeof message.text === 'string' ? message.text : message.text}
             </div>
           )}
 

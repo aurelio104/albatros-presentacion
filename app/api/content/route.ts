@@ -130,13 +130,37 @@ export async function POST(request: NextRequest) {
     }
 
     if (!saved) {
-      // Si no se pudo guardar, retornar error con instrucciones
+      // Si no se pudo guardar, verificar si es porque KV no está configurado
+      const kvNotConfigured = !process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN
+      
+      if (kvNotConfigured) {
+        return NextResponse.json(
+          { 
+            error: 'Vercel KV no está configurado',
+            details: 'El sistema de archivos es de solo lectura en producción de Vercel',
+            solution: 'Configura Vercel KV para guardar contenido',
+            instructions: [
+              '1. Ve a https://vercel.com/dashboard',
+              '2. Selecciona tu proyecto "albatros-presentacion"',
+              '3. Ve a la pestaña "Storage"',
+              '4. Haz clic en "Create Database"',
+              '5. Selecciona "KV" (Redis)',
+              '6. Elige un nombre y región',
+              '7. Haz clic en "Create"',
+              '8. Vercel redesplegará automáticamente'
+            ],
+            hint: 'Consulta VERCEL_KV_SETUP.md para instrucciones detalladas con imágenes'
+          },
+          { status: 500 }
+        )
+      }
+      
+      // Si KV está configurado pero falló, error diferente
       return NextResponse.json(
         { 
-          error: 'No se pudo guardar el contenido',
-          details: 'El sistema de archivos es de solo lectura en producción',
-          solution: 'Necesitas configurar Vercel KV. Ve a Vercel Dashboard > Storage > Create Database > KV',
-          hint: 'Consulta VERCEL_KV_SETUP.md para instrucciones detalladas'
+          error: 'Error al guardar en Vercel KV',
+          details: 'Verifica la configuración de KV y los logs de Vercel',
+          solution: 'Revisa los logs en Vercel Dashboard > Deployments > Logs'
         },
         { status: 500 }
       )
