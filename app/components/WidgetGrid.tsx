@@ -149,6 +149,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
           overflowWrap: 'break-word',
           wordBreak: 'break-word',
           hyphens: 'auto',
+          whiteSpace: 'pre-wrap', // PRESERVAR: espacios, saltos de línea, formato original
           maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
           overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
           textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',

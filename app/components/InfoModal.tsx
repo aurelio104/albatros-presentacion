@@ -103,6 +103,9 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           line-height: 1.8;
           margin-bottom: 2rem;
           color: #333;
+          white-space: pre-wrap; /* PRESERVAR: espacios, saltos de línea, formato original */
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .modal-images {
@@ -131,6 +134,9 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           font-size: 1rem;
           line-height: 1.6;
           color: #555;
+          white-space: pre-wrap; /* PRESERVAR: espacios, saltos de línea, formato original */
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         @keyframes fadeIn {

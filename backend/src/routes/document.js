@@ -176,9 +176,9 @@ async function extractStructuredContentFromWord(fileBuffer) {
       }
     }
     
-    // Extraer texto estructurado
+    // Extraer texto estructurado - PRESERVAR estructura completa
     const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
-    const fullText = textResult.value
+    const fullText = textResult.value // Texto completo preservado (espacios, saltos de línea, puntuación)
     
     return extractStructuredSections(fullText, images)
   } catch (error) {
@@ -575,10 +575,21 @@ router.post('/', upload.single('file'), async (req, res) => {
     })
 
     // Crear widgets con información de nivel jerárquico e imágenes asociadas
+    // PRESERVAR: estructura completa del contenido (espacios, puntuación, saltos de línea)
     const widgets = categorizedSections.map((section, index) => {
-      const preview = section.content.substring(0, 150).trim() + (section.content.length > 150 ? '...' : '')
-      const description = section.content.substring(0, 1000).trim()
-      const additionalInfo = section.content.length > 1000 ? section.content.substring(1000).trim() : undefined
+      // PRESERVAR: contenido completo sin cortar ni modificar
+      const fullContent = section.content || ''
+      
+      // Preview: primeros 150 caracteres SIN modificar (preservar espacios, puntuación)
+      const preview = fullContent.length > 150 
+        ? fullContent.substring(0, 150) + '...' 
+        : fullContent
+      
+      // Description: contenido completo preservado (sin límite artificial)
+      const description = fullContent
+      
+      // AdditionalInfo: undefined (todo el contenido va en description para preservar estructura)
+      const additionalInfo = undefined
 
       // Asegurar que las imágenes estén correctamente asociadas
       const sectionImages = Array.isArray(section.images) ? section.images : []
@@ -596,11 +607,11 @@ router.post('/', upload.single('file'), async (req, res) => {
 
       return {
         title: section.title || `Sección ${index + 1}`,
-        preview,
-        description,
-        additionalInfo,
+        preview, // Preview preservado
+        description, // Descripción completa preservada (espacios, saltos de línea, puntuación)
+        additionalInfo, // Sin información adicional (todo en description)
         category: section.category,
-        images: sectionImages, // Imágenes específicas de esta sección
+        images: sectionImages, // Imágenes específicas de esta sección, correctamente asociadas
         order: index,
         level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
         displayMode: 'resumen' // Por defecto mostrar resumen, el admin puede cambiarlo a 'completo'
