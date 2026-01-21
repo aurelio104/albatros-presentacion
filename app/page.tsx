@@ -4,6 +4,7 @@ import { useState } from 'react'
 import VideoBackground from './components/VideoBackground'
 import WidgetGrid from './components/WidgetGrid'
 import InfoModal from './components/InfoModal'
+import LogoCenter from './components/LogoCenter'
 import { WidgetData } from './types'
 
 export default function Home() {
@@ -64,6 +65,7 @@ export default function Home() {
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <VideoBackground />
+      <LogoCenter />
       <WidgetGrid 
         widgets={widgets} 
         onWidgetClick={setSelectedWidget}

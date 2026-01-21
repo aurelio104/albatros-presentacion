@@ -18,9 +18,10 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         gap: '2rem',
         padding: '2rem',
+        paddingBottom: '4rem',
       }}
     >
       {widgets.map((widget) => (
