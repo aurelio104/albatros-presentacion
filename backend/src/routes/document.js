@@ -87,14 +87,58 @@ function getPdfParse() {
       // Último intento: si PDFParse es una clase, crear un wrapper
       if (pdfParseModule && pdfParseModule.PDFParse) {
         console.log('🔄 Intentando crear wrapper para PDFParse class')
-        // Crear wrapper que instancie la clase y llame al método correcto
-        pdfParse = async (buffer) => {
-          const parser = new pdfParseModule.PDFParse(buffer)
-          return await parser.parse()
+        console.log('🔍 PDFParse tipo:', typeof pdfParseModule.PDFParse)
+        console.log('🔍 PDFParse métodos:', Object.getOwnPropertyNames(pdfParseModule.PDFParse))
+        
+        // Intentar diferentes formas de usar PDFParse
+        if (typeof pdfParseModule.PDFParse === 'function') {
+          // Si PDFParse es una clase, intentar usarla como función (puede ser callable)
+          try {
+            // Probar si se puede llamar directamente
+            const testResult = pdfParseModule.PDFParse
+            if (typeof testResult === 'function') {
+              pdfParse = testResult
+              console.log('✅ PDFParse es callable directamente')
+            } else {
+              // Crear wrapper que use la clase
+              pdfParse = async (buffer) => {
+                // Intentar diferentes formas de instanciar/llamar
+                if (typeof pdfParseModule.PDFParse.parse === 'function') {
+                  return await pdfParseModule.PDFParse.parse(buffer)
+                } else {
+                  const instance = new pdfParseModule.PDFParse(buffer)
+                  if (typeof instance.parse === 'function') {
+                    return await instance.parse()
+                  } else if (typeof instance.getText === 'function') {
+                    return await instance.getText()
+                  } else {
+                    // Si tiene método callable, intentar llamarlo
+                    return await instance()
+                  }
+                }
+              }
+              console.log('✅ Wrapper creado para PDFParse class')
+            }
+          } catch (err) {
+            console.error('❌ Error probando PDFParse:', err)
+            throw new Error(`No se pudo usar PDFParse: ${err.message}`)
+          }
+        } else {
+          throw new Error(`PDFParse no es una función. Tipo: ${typeof pdfParseModule.PDFParse}`)
         }
-        console.log('✅ Wrapper creado para PDFParse')
       } else {
-        throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}. Claves: ${Object.keys(pdfParseModule || {}).join(', ')}`)
+        // Verificar si el módulo completo es callable (versiones antiguas)
+        try {
+          const testCall = pdfParseModule
+          if (typeof testCall === 'function') {
+            pdfParse = testCall
+            console.log('✅ Módulo completo es callable')
+          } else {
+            throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}. Claves: ${Object.keys(pdfParseModule || {}).join(', ')}`)
+          }
+        } catch (err) {
+          throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}. Claves: ${Object.keys(pdfParseModule || {}).join(', ')}. Error: ${err.message}`)
+        }
       }
     } else {
       console.log('✅ pdfParse verificado como función. Listo para usar.')
