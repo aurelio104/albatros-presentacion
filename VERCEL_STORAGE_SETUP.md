@@ -84,3 +84,13 @@ Esto asegura que funcione tanto en desarrollo como en producción.
 | Vercel Blob | Imágenes subidas | ⚠️ Requerido |
 
 Ambos son **gratuitos** en el plan Hobby de Vercel.
+
+
+
+y si hacemos yun back sencillo para esto en koyeb ?
+
+que absolutamente todo se haga en koyeb y se muestre resultado el front 
+
+pero necesito que ejecutes completamente todo por favor 
+
+todo sebe ser seguro 

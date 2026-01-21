@@ -2,10 +2,13 @@ import express from 'express'
 import multer from 'multer'
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
-import pdfParse from 'pdf-parse'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
+const pdfParse = require('pdf-parse')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -223,7 +226,8 @@ function extractStructuredSections(fullText, images = []) {
 // Extraer contenido de PDF con detección inteligente
 async function extractFromPDF(fileBuffer) {
   try {
-    const data = await pdfParse(fileBuffer)
+    const pdfParser = await loadPdfParse()
+    const data = await pdfParser(fileBuffer)
     const fullText = data.text
     
     return extractStructuredSections(fullText, [])
