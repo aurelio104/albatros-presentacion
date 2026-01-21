@@ -1,0 +1,23 @@
+{
+  "name": "albatros-backend",
+  "type": "docker",
+  "docker": {
+    "image": "node:18-alpine"
+  },
+  "build": {
+    "command": "cd backend && npm install && npm start"
+  },
+  "run": {
+    "command": "cd backend && npm start"
+  },
+  "env": [
+    {
+      "name": "PORT",
+      "value": "3001"
+    },
+    {
+      "name": "NODE_ENV",
+      "value": "production"
+    }
+  ]
+}

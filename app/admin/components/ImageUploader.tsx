@@ -39,7 +39,8 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
     formData.append('file', file)
 
     try {
-      const response = await fetch('/api/upload', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+      const response = await fetch(`${backendUrl}/api/upload`, {
         method: 'POST',
         body: formData,
       })

@@ -116,7 +116,8 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
     formData.append('autoCreate', autoCreate.toString())
 
     try {
-      const response = await fetch('/api/process-document', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+      const response = await fetch(`${backendUrl}/api/process-document`, {
         method: 'POST',
         body: formData,
       })

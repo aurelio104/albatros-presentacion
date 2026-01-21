@@ -30,7 +30,8 @@ export default function Home() {
 
   const loadContent = async () => {
     try {
-      const response = await fetch('/api/content', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+      const response = await fetch(`${backendUrl}/api/content`, {
         cache: 'no-store',
       })
       if (response.ok) {
