@@ -4,6 +4,29 @@ import { useState, useEffect } from 'react'
 import { WidgetData } from '@/app/types'
 import ImageUploader from './ImageUploader'
 
+const inputStyle = {
+  width: '100%',
+  padding: '0.75rem',
+  border: '2px solid rgba(255, 255, 255, 0.3)',
+  background: 'rgba(255, 255, 255, 0.1)',
+  color: '#ffffff',
+  borderRadius: '8px',
+  fontSize: '1rem',
+  backdropFilter: 'blur(5px)',
+} as React.CSSProperties
+
+const labelStyle = {
+  display: 'block',
+  marginBottom: '0.5rem',
+  fontWeight: '500',
+  color: '#ffffff',
+} as React.CSSProperties
+
+const headingStyle = {
+  color: '#ffffff',
+  fontWeight: '600',
+} as React.CSSProperties
+
 interface WidgetEditorProps {
   widget: WidgetData
   onUpdate: (widget: WidgetData) => void
@@ -79,50 +102,53 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
   return (
     <div>
-      <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: '600' }}>
+      <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: '600', color: '#ffffff' }}>
         Editor de Widget
       </h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Información Básica */}
         <div>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
             Información Básica
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Título del Widget
               </label>
               <input
                 type="text"
                 value={editedWidget.title}
                 onChange={(e) => handleChange('title', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Vista Previa
               </label>
               <textarea
                 value={editedWidget.preview}
                 onChange={(e) => handleChange('preview', e.target.value)}
                 rows={2}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  resize: 'vertical',
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               />
             </div>
@@ -131,62 +157,66 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
         {/* Contenido Completo */}
         <div>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
             Contenido Completo
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Título
               </label>
               <input
                 type="text"
                 value={editedWidget.content.title}
                 onChange={(e) => handleChange('content.title', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Descripción
               </label>
               <textarea
                 value={editedWidget.content.description}
                 onChange={(e) => handleChange('content.description', e.target.value)}
                 rows={4}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  resize: 'vertical',
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Información Adicional
               </label>
               <textarea
                 value={editedWidget.content.additionalInfo || ''}
                 onChange={(e) => handleChange('content.additionalInfo', e.target.value)}
                 rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  resize: 'vertical',
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               />
             </div>
@@ -195,7 +225,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
         {/* Imágenes */}
         <div>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
             Imágenes
           </h3>
           <ImageUploader onUpload={addImage} />
@@ -214,7 +244,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   position: 'relative',
                   borderRadius: '8px',
                   overflow: 'hidden',
-                  border: '2px solid #e0e0e0',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
                 }}
               >
                 <img
@@ -232,14 +262,15 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                     position: 'absolute',
                     top: '0.5rem',
                     right: '0.5rem',
-                    background: '#ef4444',
+                    background: 'rgba(239, 68, 68, 0.8)',
                     color: 'white',
-                    border: 'none',
+                    border: '1px solid rgba(239, 68, 68, 1)',
                     borderRadius: '50%',
                     width: '30px',
                     height: '30px',
                     cursor: 'pointer',
                     fontSize: '1.2rem',
+                    backdropFilter: 'blur(5px)',
                   }}
                 >
                   ×
@@ -251,12 +282,12 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
         {/* Animación */}
         <div>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
             Animación
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Tipo de Animación
               </label>
               <select
@@ -265,15 +296,20 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   handleChange('animation.type', e.target.value)
                 }
                 style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
+                  ...inputStyle,
+                  cursor: 'pointer',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
               >
                 {animationTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
+                  <option key={type.value} value={type.value} style={{ background: '#1a1a1a', color: '#ffffff' }}>
                     {type.label}
                   </option>
                 ))}
@@ -282,7 +318,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                <label style={labelStyle}>
                   Duración (segundos)
                 </label>
                 <input
@@ -294,18 +330,20 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   onChange={(e) =>
                     handleChange('animation.duration', parseFloat(e.target.value))
                   }
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                <label style={labelStyle}>
                   Delay (segundos)
                 </label>
                 <input
@@ -317,12 +355,14 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   onChange={(e) =>
                     handleChange('animation.delay', parseFloat(e.target.value))
                   }
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                   }}
                 />
               </div>
@@ -332,12 +372,12 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
         {/* Estilos */}
         <div>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: '600' }}>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
             Estilos
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Color de Fondo
               </label>
               <input
@@ -347,15 +387,16 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                 style={{
                   width: '100%',
                   height: '50px',
-                  border: '2px solid #e0e0e0',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
                   borderRadius: '8px',
                   cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.1)',
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+              <label style={labelStyle}>
                 Color de Borde
               </label>
               <input
@@ -365,9 +406,10 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                 style={{
                   width: '100%',
                   height: '50px',
-                  border: '2px solid #e0e0e0',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
                   borderRadius: '8px',
                   cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.1)',
                 }}
               />
             </div>

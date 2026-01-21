@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { AppContent, WidgetData } from '@/app/types'
+import VideoBackground from '@/app/components/VideoBackground'
+import Header from '@/app/components/Header'
 import WidgetEditor from './WidgetEditor'
 import ImageUploader from './ImageUploader'
 import SettingsEditor from './SettingsEditor'
@@ -130,281 +132,466 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Cargando...</p>
-      </div>
+      <main style={{ 
+        position: 'relative', 
+        width: '100vw', 
+        height: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff'
+      }}>
+        <VideoBackground 
+          videoSrc="/videos/video1.MP4"
+          overlay={{ opacity: 0.4, color: 'rgba(0, 0, 0, 0.4)' }}
+        />
+        <Header logoSrc="/images/logotB.png" size={320} />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+          <p>Cargando...</p>
+        </div>
+      </main>
     )
   }
 
   if (!content) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Error al cargar el contenido</p>
-      </div>
+      <main style={{ 
+        position: 'relative', 
+        width: '100vw', 
+        height: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff'
+      }}>
+        <VideoBackground 
+          videoSrc="/videos/video1.MP4"
+          overlay={{ opacity: 0.4, color: 'rgba(0, 0, 0, 0.4)' }}
+        />
+        <Header logoSrc="/images/logotB.png" size={320} />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+          <p>Error al cargar el contenido</p>
+        </div>
+      </main>
     )
   }
 
   return (
-    <div
-      style={{
+    <>
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          height: 100%;
+          overflow-x: hidden;
+        }
+      `}</style>
+      <main style={{
+        position: 'relative',
+        width: '100vw',
         minHeight: '100vh',
-        background: '#f5f5f5',
+        overflow: 'hidden',
         padding: '2rem',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            color: '#1a1a1a',
-            margin: 0,
-          }}
-        >
-          Panel de Administración - Albatros
-        </h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <a
-            href="/"
-            target="_blank"
+        paddingTop: '120px',
+      }}>
+        <VideoBackground 
+          videoSrc={content.settings.videoBackground || '/videos/video1.MP4'}
+          overlay={content.settings.overlay || { opacity: 0.4, color: 'rgba(0, 0, 0, 0.4)' }}
+        />
+        <Header 
+          logoSrc={content.settings.logo.src || '/images/logotB.png'}
+          size={content.settings.logo.size || 320}
+        />
+
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          {/* Header */}
+          <div
             style={{
-              padding: '0.5rem 1rem',
-              background: '#667eea',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              marginBottom: '2rem',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
             }}
           >
-            Ver Sitio
-          </a>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#dc2626',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-            }}
-          >
-            Salir
-          </button>
-        </div>
-      </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          style={{
-            padding: '1rem',
-            background: message.type === 'success' ? '#10b981' : '#ef4444',
-            color: 'white',
-            borderRadius: '8px',
-            marginBottom: '1rem',
-            textAlign: 'center',
-          }}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.5rem',
-          marginBottom: '2rem',
-          background: 'white',
-          padding: '0.5rem',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}
-      >
-        {(['widgets', 'settings', 'images'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: activeTab === tab ? '#667eea' : 'transparent',
-              color: activeTab === tab ? 'white' : '#666',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: activeTab === tab ? '600' : '400',
-              transition: 'all 0.2s',
-            }}
-          >
-            {tab === 'widgets' && 'Widgets'}
-            {tab === 'settings' && 'Configuración'}
-            {tab === 'images' && 'Imágenes'}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: activeTab === 'widgets' ? '300px 1fr' : '1fr',
-          gap: '2rem',
-        }}
-      >
-        {activeTab === 'widgets' && (
-          <>
-            {/* Widget List */}
-            <div
+            <h1
               style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                height: 'fit-content',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                color: '#ffffff',
+                margin: 0,
               }}
             >
-              <div
+              Panel de Administración - Albatros
+            </h1>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="/"
+                target="_blank"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '1rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                  e.currentTarget.style.transform = 'translateY(0)'
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                  Widgets ({content.widgets.length})
-                </h2>
-                <button
-                  onClick={addWidget}
+                Ver Sitio
+              </a>
+              <button
+                onClick={onLogout}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(220, 38, 38, 0.3)',
+                  color: 'white',
+                  border: '1px solid rgba(220, 38, 38, 0.5)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(220, 38, 38, 0.5)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(220, 38, 38, 0.3)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+
+          {/* Message */}
+          {message && (
+            <div
+              style={{
+                padding: '1rem',
+                background: message.type === 'success' 
+                  ? 'rgba(16, 185, 129, 0.3)' 
+                  : 'rgba(239, 68, 68, 0.3)',
+                color: 'white',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                textAlign: 'center',
+                border: `1px solid ${message.type === 'success' 
+                  ? 'rgba(16, 185, 129, 0.5)' 
+                  : 'rgba(239, 68, 68, 0.5)'}`,
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+              }}
+            >
+              {message.text}
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              marginBottom: '2rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              padding: '0.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            {(['widgets', 'settings', 'images'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: activeTab === tab 
+                    ? 'rgba(255, 255, 255, 0.3)' 
+                    : 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: activeTab === tab ? '600' : '400',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab) {
+                    e.currentTarget.style.background = 'transparent'
+                  }
+                }}
+              >
+                {tab === 'widgets' && 'Widgets'}
+                {tab === 'settings' && 'Configuración'}
+                {tab === 'images' && 'Imágenes'}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: activeTab === 'widgets' ? '300px 1fr' : '1fr',
+              gap: '2rem',
+            }}
+          >
+            {activeTab === 'widgets' && (
+              <>
+                {/* Widget List */}
+                <div
                   style={{
-                    padding: '0.5rem 1rem',
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    height: 'fit-content',
+                    maxHeight: 'calc(100vh - 300px)',
+                    overflowY: 'auto',
                   }}
                 >
-                  + Nuevo
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {content.widgets.map((widget) => (
                   <div
-                    key={widget.id}
-                    onClick={() => setSelectedWidget(widget)}
                     style={{
-                      padding: '1rem',
-                      background:
-                        selectedWidget?.id === widget.id ? '#667eea' : '#f5f5f5',
-                      color: selectedWidget?.id === widget.id ? 'white' : '#333',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      marginBottom: '1rem',
                     }}
                   >
-                    <span style={{ fontWeight: '500' }}>{widget.title}</span>
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'white' }}>
+                      Widgets ({content.widgets.length})
+                    </h2>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteWidget(widget.id)
-                      }}
+                      onClick={addWidget}
                       style={{
-                        padding: '0.25rem 0.5rem',
-                        background: '#ef4444',
+                        padding: '0.5rem 1rem',
+                        background: 'rgba(16, 185, 129, 0.3)',
                         color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
+                        border: '1px solid rgba(16, 185, 129, 0.5)',
+                        borderRadius: '8px',
                         cursor: 'pointer',
-                        fontSize: '0.8rem',
+                        fontSize: '0.9rem',
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.5)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'
+                        e.currentTarget.style.transform = 'translateY(0)'
                       }}
                     >
-                      ×
+                      + Nuevo
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Widget Editor */}
-            <div
-              style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '2rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              }}
-            >
-              {selectedWidget ? (
-                <WidgetEditor
-                  widget={selectedWidget}
-                  onUpdate={updateWidget}
-                />
-              ) : (
-                <div style={{ textAlign: 'center', color: '#999', padding: '3rem' }}>
-                  <p>Selecciona un widget para editarlo</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {content.widgets.map((widget) => (
+                      <div
+                        key={widget.id}
+                        onClick={() => setSelectedWidget(widget)}
+                        style={{
+                          padding: '1rem',
+                          background:
+                            selectedWidget?.id === widget.id 
+                              ? 'rgba(255, 255, 255, 0.3)' 
+                              : 'rgba(255, 255, 255, 0.1)',
+                          color: 'white',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          border: selectedWidget?.id === widget.id 
+                            ? '1px solid rgba(255, 255, 255, 0.4)' 
+                            : '1px solid rgba(255, 255, 255, 0.2)',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedWidget?.id !== widget.id) {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedWidget?.id !== widget.id) {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                          }
+                        }}
+                      >
+                        <span style={{ fontWeight: '500' }}>{widget.title}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteWidget(widget.id)
+                          }}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            background: 'rgba(239, 68, 68, 0.3)',
+                            color: 'white',
+                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
-          </>
-        )}
 
-        {activeTab === 'settings' && (
-          <SettingsEditor
-            settings={content.settings}
-            onUpdate={updateSettings}
-          />
-        )}
+                {/* Widget Editor */}
+                <div
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '16px',
+                    padding: '2rem',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    maxHeight: 'calc(100vh - 300px)',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {selectedWidget ? (
+                    <WidgetEditor
+                      widget={selectedWidget}
+                      onUpdate={updateWidget}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', padding: '3rem' }}>
+                      <p>Selecciona un widget para editarlo</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
-        {activeTab === 'images' && <ImageUploader />}
-      </div>
+            {activeTab === 'settings' && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '2rem',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                }}
+              >
+                <SettingsEditor
+                  settings={content.settings}
+                  onUpdate={updateSettings}
+                />
+              </div>
+            )}
 
-      {/* Save Button */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: '2rem',
-          right: '2rem',
-        }}
-      >
-        <button
-          onClick={saveContent}
-          disabled={saving}
+            {activeTab === 'images' && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '2rem',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                }}
+              >
+                <ImageUploader />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div
           style={{
-            padding: '1rem 2rem',
-            background: saving ? '#999' : '#667eea',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            cursor: saving ? 'not-allowed' : 'pointer',
-            fontSize: '1rem',
-            fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-            transition: 'all 0.2s',
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            zIndex: 1000,
           }}
         >
-          {saving ? 'Guardando...' : '💾 Guardar Cambios'}
-        </button>
-      </div>
-    </div>
+          <button
+            onClick={saveContent}
+            disabled={saving}
+            style={{
+              padding: '1rem 2rem',
+              background: saving 
+                ? 'rgba(255, 255, 255, 0.2)' 
+                : 'rgba(102, 126, 234, 0.5)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '12px',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              fontSize: '1rem',
+              fontWeight: '600',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s',
+              backdropFilter: 'blur(10px)',
+            }}
+            onMouseEnter={(e) => {
+              if (!saving) {
+                e.currentTarget.style.background = 'rgba(102, 126, 234, 0.7)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!saving) {
+                e.currentTarget.style.background = 'rgba(102, 126, 234, 0.5)'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }
+            }}
+          >
+            {saving ? 'Guardando...' : '💾 Guardar Cambios'}
+          </button>
+        </div>
+      </main>
+    </>
   )
 }

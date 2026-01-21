@@ -67,27 +67,28 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
     <div>
       <div
         style={{
-          border: '2px dashed #e0e0e0',
+          border: '2px dashed rgba(255, 255, 255, 0.3)',
           borderRadius: '12px',
           padding: '2rem',
           textAlign: 'center',
-          background: '#f9f9f9',
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(5px)',
           transition: 'all 0.3s',
           cursor: uploading ? 'wait' : 'pointer',
         }}
         onDragOver={(e) => {
           e.preventDefault()
-          e.currentTarget.style.borderColor = '#667eea'
-          e.currentTarget.style.background = '#f0f4ff'
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)'
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
         }}
         onDragLeave={(e) => {
-          e.currentTarget.style.borderColor = '#e0e0e0'
-          e.currentTarget.style.background = '#f9f9f9'
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
         }}
         onDrop={(e) => {
           e.preventDefault()
-          e.currentTarget.style.borderColor = '#e0e0e0'
-          e.currentTarget.style.background = '#f9f9f9'
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
           
           const file = e.dataTransfer.files[0]
           if (file && file.type.startsWith('image/')) {
@@ -118,16 +119,16 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
         >
           {uploading ? (
             <div>
-              <p style={{ margin: 0, color: '#667eea', fontWeight: '600' }}>
+              <p style={{ margin: 0, color: '#ffffff', fontWeight: '600' }}>
                 Subiendo...
               </p>
             </div>
           ) : (
             <div>
-              <p style={{ margin: 0, color: '#666', fontSize: '1.1rem' }}>
+              <p style={{ margin: 0, color: '#ffffff', fontSize: '1.1rem' }}>
                 📷 Arrastra una imagen aquí o haz clic para seleccionar
               </p>
-              <p style={{ margin: '0.5rem 0 0 0', color: '#999', fontSize: '0.9rem' }}>
+              <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
                 Máximo 10MB - JPG, PNG, WEBP, GIF
               </p>
             </div>
@@ -141,7 +142,8 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
             marginTop: '1rem',
             borderRadius: '8px',
             overflow: 'hidden',
-            border: '2px solid #e0e0e0',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            background: 'rgba(255, 255, 255, 0.05)',
           }}
         >
           <img
