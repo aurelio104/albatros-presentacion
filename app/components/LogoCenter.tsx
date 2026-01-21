@@ -300,24 +300,9 @@ export default function LogoCenter({
         }
 
         @media (max-width: 768px) {
-          .logo-image {
-            width: 220px;
+          .logo-container {
+            top: 3% !important;
           }
-          .halo {
-            width: 320px;
-            height: 320px;
-          }
-          .halo::before {
-            width: 270px;
-            height: 270px;
-          }
-          .halo::after {
-            width: 360px;
-            height: 360px;
-          }
-        }
-
-        @media (max-width: 480px) {
           .logo-image {
             width: 180px;
           }
@@ -332,6 +317,27 @@ export default function LogoCenter({
           .halo::after {
             width: 320px;
             height: 320px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .logo-container {
+            top: 2% !important;
+          }
+          .logo-image {
+            width: 140px;
+          }
+          .halo {
+            width: 220px;
+            height: 220px;
+          }
+          .halo::before {
+            width: 180px;
+            height: 180px;
+          }
+          .halo::after {
+            width: 260px;
+            height: 260px;
           }
         }
       `}</style>

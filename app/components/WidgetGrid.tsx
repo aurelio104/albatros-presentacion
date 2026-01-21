@@ -121,23 +121,60 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
 
 export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) {
   return (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 1,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '2rem',
-        padding: '2rem',
-      }}
-    >
-      {widgets.map((widget) => (
-        <WidgetItem key={widget.id} widget={widget} onWidgetClick={onWidgetClick} />
-      ))}
-    </div>
+    <>
+      <style jsx>{`
+        .widget-grid {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: center;
+          gap: 2rem;
+          padding: 2rem;
+        }
+
+        .widget-item {
+          min-width: 280px;
+          max-width: 320px;
+        }
+
+        @media (max-width: 768px) {
+          .widget-grid {
+            padding-top: 200px;
+            align-items: flex-start;
+            padding-bottom: 2rem;
+          }
+          .widget-item {
+            min-width: 250px;
+            max-width: 100%;
+            width: calc(50% - 1rem);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .widget-grid {
+            padding-top: 160px;
+            gap: 1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+          .widget-item {
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
+          }
+        }
+      `}</style>
+      <div className="widget-grid">
+        {widgets.map((widget) => (
+          <div key={widget.id} className="widget-item">
+            <WidgetItem widget={widget} onWidgetClick={onWidgetClick} />
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
