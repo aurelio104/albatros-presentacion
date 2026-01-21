@@ -50,7 +50,24 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     // Retornar URL relativa (el frontend deberá usar la URL del backend)
     const fileUrl = `/images/${req.file.filename}`
-    const backendUrl = process.env.BACKEND_URL || req.protocol + '://' + req.get('host')
+    
+    // Detectar protocolo correcto (HTTPS en producción)
+    let backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL
+    if (!backendUrl && req) {
+      const protocol = req.get('X-Forwarded-Proto') || 
+                       (req.secure ? 'https' : 'http') ||
+                       req.protocol
+      const isProduction = process.env.NODE_ENV === 'production'
+      const finalProtocol = (isProduction && protocol === 'http') ? 'https' : protocol
+      const host = req.get('host') || req.get('X-Forwarded-Host')
+      if (host) {
+        backendUrl = `${finalProtocol}://${host}`
+      }
+    }
+    if (!backendUrl) {
+      backendUrl = 'http://localhost:3001' // Fallback desarrollo
+    }
+    
     const fullUrl = `${backendUrl}${fileUrl}`
 
     res.json({

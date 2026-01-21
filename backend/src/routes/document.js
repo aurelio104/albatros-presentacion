@@ -19,16 +19,34 @@ const require = createRequire(import.meta.url)
 
 // Función helper para obtener la URL del backend
 function getBackendUrl(req) {
+  // Prioridad 1: Variables de entorno explícitas
   if (process.env.BACKEND_URL) {
     return process.env.BACKEND_URL
   }
   if (process.env.KOYEB_URL) {
     return process.env.KOYEB_URL
   }
-  if (req && req.protocol && req.get('host')) {
-    return `${req.protocol}://${req.get('host')}`
+  
+  // Prioridad 2: Detectar protocolo desde headers de proxy (Koyeb, Vercel, etc.)
+  if (req) {
+    // Detectar HTTPS desde headers de proxy
+    const protocol = req.get('X-Forwarded-Proto') || 
+                     (req.secure ? 'https' : 'http') ||
+                     req.protocol
+    
+    // En producción, forzar HTTPS si no está explícitamente configurado
+    const isProduction = process.env.NODE_ENV === 'production'
+    const finalProtocol = (isProduction && protocol === 'http') ? 'https' : protocol
+    
+    const host = req.get('host') || req.get('X-Forwarded-Host')
+    
+    if (host) {
+      return `${finalProtocol}://${host}`
+    }
   }
-  return 'http://localhost:3001' // Fallback para desarrollo
+  
+  // Fallback: desarrollo local
+  return 'http://localhost:3001'
 }
 
 // Importar pdf-parse de forma segura - función lazy para evitar errores al iniciar

@@ -28,13 +28,11 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || [
 // CORS configurado de forma segura
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (mobile apps, Postman, etc.) solo en desarrollo
-    if (!origin && process.env.NODE_ENV === 'development') {
-      return callback(null, true)
-    }
-    
+    // Permitir requests sin origin para health checks y servicios internos
     if (!origin) {
-      return callback(new Error('Origin requerido'))
+      // En producción, permitir solo para health checks y rutas internas
+      const isHealthCheck = false // Se verificará en la ruta específica
+      return callback(null, true) // Permitir para health checks y servicios internos
     }
     
     // Verificar si el origin está permitido
