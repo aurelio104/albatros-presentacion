@@ -19,6 +19,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images' | 'documents'>('widgets')
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
+  const [selectedWidgetIds, setSelectedWidgetIds] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string | React.ReactNode } | null>(null)
 
   useEffect(() => {
@@ -185,6 +186,113 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setMessage({ type: 'success', text: `${newWidgets.length} widgets creados exitosamente` })
     setTimeout(() => setMessage(null), 3000)
     setActiveTab('widgets')
+  }
+
+  const handleToggleWidgetSelection = (widgetId: number) => {
+    const newSelected = new Set(selectedWidgetIds)
+    if (newSelected.has(widgetId)) {
+      newSelected.delete(widgetId)
+    } else {
+      newSelected.add(widgetId)
+    }
+    setSelectedWidgetIds(newSelected)
+  }
+
+  const handleMergeWidgets = () => {
+    if (!content) return
+    if (selectedWidgetIds.size < 2) {
+      setMessage({ type: 'error', text: 'Selecciona al menos 2 widgets para unir' })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    const ids = Array.from(selectedWidgetIds)
+    const widgetsToMerge = ids
+      .map(id => content.widgets.findIndex(w => w.id === id))
+      .filter(idx => idx !== -1)
+      .sort((a, b) => a - b)
+      .map(idx => content.widgets[idx])
+
+    if (widgetsToMerge.length < 2) {
+      setMessage({ type: 'error', text: 'No se encontraron los widgets seleccionados' })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    // Crear widget unificado
+    const mergedTitle = widgetsToMerge[0].title // Usar el título del primero
+    const mergedDescription = widgetsToMerge
+      .map(w => `${w.title}\n\n${w.content.description}`)
+      .join('\n\n---\n\n')
+    const mergedAdditionalInfo = widgetsToMerge
+      .map(w => w.content.additionalInfo)
+      .filter(Boolean)
+      .join('\n\n---\n\n')
+    
+    // Combinar todas las imágenes (sin duplicados)
+    const allImages = new Set<string>()
+    widgetsToMerge.forEach(w => {
+      if (w.content.images) {
+        w.content.images.forEach(img => allImages.add(img))
+      }
+    })
+    
+    // Usar la categoría más común o la primera
+    const categories = widgetsToMerge.map(w => w.category).filter(Boolean)
+    const categoryCounts = categories.reduce((acc, cat) => {
+      acc[cat!] = (acc[cat!] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    const mergedCategory = Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || widgetsToMerge[0].category || 'otro'
+    
+    // Usar el nivel más alto (menor número = más importante) si existe
+    const levels = widgetsToMerge.map(w => w.order || 0).filter(l => l !== undefined)
+    const mergedOrder = levels.length > 0 ? Math.min(...levels) : content.widgets.length
+
+    const mergedWidget: WidgetData = {
+      id: Date.now(),
+      title: mergedTitle,
+      preview: mergedDescription.substring(0, 150) + (mergedDescription.length > 150 ? '...' : ''),
+      content: {
+        title: mergedTitle,
+        description: mergedDescription,
+        additionalInfo: mergedAdditionalInfo || undefined,
+        images: Array.from(allImages),
+      },
+      category: mergedCategory as any,
+      animation: widgetsToMerge[0].animation || {
+        type: 'fadeIn',
+        duration: 0.5,
+        delay: 0,
+      },
+      style: widgetsToMerge[0].style || {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+      },
+      order: mergedOrder,
+    }
+    
+    // Eliminar widgets originales y agregar el unificado
+    const updatedWidgets = content.widgets.filter(w => !selectedWidgetIds.has(w.id))
+    
+    // Insertar el widget unificado en la posición del primero
+    const firstIndex = content.widgets.findIndex(w => w.id === ids[0])
+    updatedWidgets.splice(firstIndex >= 0 ? firstIndex : 0, 0, mergedWidget)
+    
+    // Reordenar los widgets
+    updatedWidgets.forEach((w, i) => {
+      w.order = i
+    })
+    
+    setContent({
+      ...content,
+      widgets: updatedWidgets,
+    })
+    setSelectedWidgetIds(new Set())
+    setSelectedWidget(mergedWidget)
+    setMessage({ type: 'success', text: `✅ ${selectedWidgetIds.size} widgets unidos exitosamente` })
+    setTimeout(() => setMessage(null), 3000)
   }
 
   if (loading) {
@@ -475,99 +583,190 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      flexDirection: 'column',
+                      gap: '1rem',
                       marginBottom: '1rem',
                     }}
                   >
-                    <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'white' }}>
-                      Widgets ({content.widgets.length})
-                    </h2>
-                    <button
-                      onClick={addWidget}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        background: 'rgba(16, 185, 129, 0.3)',
-                        color: 'white',
-                        border: '1px solid rgba(16, 185, 129, 0.5)',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.5)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                      }}
-                    >
-                      + Nuevo
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {content.widgets.map((widget) => (
-                      <div
-                        key={widget.id}
-                        onClick={() => setSelectedWidget(widget)}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600', color: 'white' }}>
+                        Widgets ({content.widgets.length})
+                      </h2>
+                      <button
+                        onClick={addWidget}
                         style={{
-                          padding: '1rem',
-                          background:
-                            selectedWidget?.id === widget.id 
-                              ? 'rgba(255, 255, 255, 0.3)' 
-                              : 'rgba(255, 255, 255, 0.1)',
+                          padding: '0.5rem 1rem',
+                          background: 'rgba(16, 185, 129, 0.3)',
                           color: 'white',
+                          border: '1px solid rgba(16, 185, 129, 0.5)',
                           borderRadius: '8px',
                           cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          border: selectedWidget?.id === widget.id 
-                            ? '1px solid rgba(255, 255, 255, 0.4)' 
-                            : '1px solid rgba(255, 255, 255, 0.2)',
+                          fontSize: '0.9rem',
+                          transition: 'all 0.3s ease',
                         }}
                         onMouseEnter={(e) => {
-                          if (selectedWidget?.id !== widget.id) {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                          }
+                          e.currentTarget.style.background = 'rgba(16, 185, 129, 0.5)'
+                          e.currentTarget.style.transform = 'translateY(-2px)'
                         }}
                         onMouseLeave={(e) => {
-                          if (selectedWidget?.id !== widget.id) {
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                          }
+                          e.currentTarget.style.background = 'rgba(16, 185, 129, 0.3)'
+                          e.currentTarget.style.transform = 'translateY(0)'
                         }}
                       >
-                        <span style={{ fontWeight: '500' }}>{widget.title}</span>
+                        + Nuevo
+                      </button>
+                    </div>
+                    {selectedWidgetIds.size > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                        padding: '0.75rem',
+                        background: 'rgba(102, 126, 234, 0.2)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(102, 126, 234, 0.4)',
+                      }}>
+                        <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: '500' }}>
+                          {selectedWidgetIds.size} seleccionado{selectedWidgetIds.size > 1 ? 's' : ''}
+                        </span>
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deleteWidget(widget.id)
-                          }}
+                          onClick={handleMergeWidgets}
                           style={{
-                            padding: '0.25rem 0.5rem',
-                            background: 'rgba(239, 68, 68, 0.3)',
+                            padding: '0.5rem 1rem',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             color: 'white',
-                            border: '1px solid rgba(239, 68, 68, 0.5)',
-                            borderRadius: '4px',
+                            border: 'none',
+                            borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '0.8rem',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            transition: 'transform 0.2s',
+                            marginLeft: 'auto',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.05)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)'
+                          }}
+                        >
+                          🔗 Unir Widgets
+                        </button>
+                        <button
+                          onClick={() => setSelectedWidgetIds(new Set())}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
                             transition: 'all 0.2s',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                           }}
                         >
-                          ×
+                          ✕ Cancelar
                         </button>
                       </div>
-                    ))}
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {content.widgets.map((widget) => {
+                      const isSelected = selectedWidgetIds.has(widget.id)
+                      const isActive = selectedWidget?.id === widget.id
+                      return (
+                        <div
+                          key={widget.id}
+                          onClick={(e) => {
+                            // Si se hace clic en el checkbox, no cambiar la selección del editor
+                            if ((e.target as HTMLElement).tagName === 'INPUT') return
+                            setSelectedWidget(widget)
+                          }}
+                          style={{
+                            padding: '1rem',
+                            background:
+                              isActive 
+                                ? 'rgba(255, 255, 255, 0.3)' 
+                                : isSelected
+                                ? 'rgba(102, 126, 234, 0.2)'
+                                : 'rgba(255, 255, 255, 0.1)',
+                            color: 'white',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            border: isActive 
+                              ? '1px solid rgba(255, 255, 255, 0.4)' 
+                              : isSelected
+                              ? '1px solid rgba(102, 126, 234, 0.5)'
+                              : '1px solid rgba(255, 255, 255, 0.2)',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isActive && !isSelected) {
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive && !isSelected) {
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                            }
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                handleToggleWidgetSelection(widget.id)
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                width: '18px',
+                                height: '18px',
+                                cursor: 'pointer',
+                                accentColor: '#667eea',
+                              }}
+                            />
+                            <span style={{ fontWeight: '500', flex: 1 }}>{widget.title}</span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteWidget(widget.id)
+                            }}
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              background: 'rgba(239, 68, 68, 0.3)',
+                              color: 'white',
+                              border: '1px solid rgba(239, 68, 68, 0.5)',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
