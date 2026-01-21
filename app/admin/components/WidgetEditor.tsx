@@ -115,6 +115,25 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={labelStyle}>
+                Categoría
+              </label>
+              <select
+                value={editedWidget.category || 'otro'}
+                onChange={(e) => handleChange('category', e.target.value as WidgetCategory)}
+                style={inputStyle}
+              >
+                <option value="operaciones">Operaciones</option>
+                <option value="economico">Económico</option>
+                <option value="tecnologico">Tecnológico</option>
+                <option value="estrategico">Estratégico</option>
+                <option value="recursos">Recursos</option>
+                <option value="calidad">Calidad</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
                 Título del Widget
               </label>
               <input
