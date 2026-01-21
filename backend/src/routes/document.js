@@ -7,8 +7,43 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// pdf-parse es CommonJS, necesitamos usar createRequire
 const require = createRequire(import.meta.url)
-const pdfParse = require('pdf-parse')
+
+// Importar pdf-parse de forma segura
+let pdfParse
+try {
+  const pdfParseModule = require('pdf-parse')
+  console.log('pdf-parse cargado. Tipo:', typeof pdfParseModule)
+  
+  // pdf-parse puede exportarse de diferentes formas dependiendo de la versión
+  if (typeof pdfParseModule === 'function') {
+    pdfParse = pdfParseModule
+  } else if (pdfParseModule.default && typeof pdfParseModule.default === 'function') {
+    pdfParse = pdfParseModule.default
+  } else if (pdfParseModule.pdfParse && typeof pdfParseModule.pdfParse === 'function') {
+    pdfParse = pdfParseModule.pdfParse
+  } else {
+    // Intentar acceder directamente si es un objeto con el método
+    pdfParse = pdfParseModule
+  }
+  
+  console.log('pdfParse final. Tipo:', typeof pdfParse)
+  
+  if (typeof pdfParse !== 'function') {
+    console.error('ERROR: pdfParse no es una función después de procesar')
+    console.error('pdfParseModule:', pdfParseModule)
+    console.error('Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
+    throw new Error('pdf-parse no se importó como función')
+  }
+} catch (error) {
+  console.error('Error cargando pdf-parse:', error)
+  console.error('Stack:', error.stack)
+  throw new Error(`No se pudo cargar pdf-parse: ${error.message}`)
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
