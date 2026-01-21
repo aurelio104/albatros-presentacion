@@ -7,6 +7,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
 import { PDFDocument } from 'pdf-lib'
+import AdmZip from 'adm-zip'
+import { parseStringPromise } from 'xml2js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -264,13 +266,15 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
   return null // No es un título
 }
 
-// Extraer contenido estructurado de Word con detección inteligente
+// Extraer contenido estructurado de Word con detección inteligente e imágenes
 async function extractStructuredContentFromWord(fileBuffer) {
   try {
+    console.log('📄 Procesando archivo Word...')
+    
+    // Extraer imágenes del archivo Word (método 1: desde HTML de mammoth)
     const htmlResult = await mammoth.convertToHtml({ buffer: fileBuffer })
     const html = htmlResult.value
     
-    // Extraer imágenes
     const images = []
     const imageMatches = html.match(/<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"/g)
     if (imageMatches) {
@@ -284,32 +288,53 @@ async function extractStructuredContentFromWord(fileBuffer) {
           const base64Data = match[2]
           const imageBuffer = Buffer.from(base64Data, 'base64')
           
-          const imageName = `extracted-${Date.now()}-${i}.${ext}`
+          const imageName = `word-${Date.now()}-${i}.${ext}`
           const imagePath = path.join(imagesDir, imageName)
           await fs.writeFile(imagePath, imageBuffer)
           
-          const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
+          const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
           images.push(`${backendUrl}/images/${imageName}`)
         }
       }
     }
     
+    // Método 2: Extraer imágenes directamente del ZIP (más confiable)
+    const zipImages = await extractImagesFromOfficeFile(fileBuffer, 'docx')
+    // Combinar ambas listas, eliminando duplicados
+    const allImages = [...new Set([...images, ...zipImages])]
+    
     // Extraer texto estructurado - PRESERVAR estructura completa
     const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
     const fullText = textResult.value // Texto completo preservado (espacios, saltos de línea, puntuación)
     
-    return extractStructuredSections(fullText, images)
+    console.log(`✅ Word procesado: ${fullText.length} caracteres, ${allImages.length} imágenes`)
+    
+    return extractStructuredSections(fullText, allImages)
   } catch (error) {
-    console.error('Error extrayendo contenido:', error)
-    const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
-    return {
-      sections: [{
-        title: 'Contenido Extraído',
-        content: textResult.value,
-        images: [],
-        level: 1
-      }],
-      allImages: []
+    console.error('Error extrayendo contenido Word:', error)
+    try {
+      const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
+      // Intentar extraer imágenes del ZIP como fallback
+      const zipImages = await extractImagesFromOfficeFile(fileBuffer, 'docx')
+      return {
+        sections: [{
+          title: 'Contenido Extraído',
+          content: textResult.value, // PRESERVAR estructura
+          images: zipImages,
+          level: 1
+        }],
+        allImages: zipImages
+      }
+    } catch (fallbackError) {
+      return {
+        sections: [{
+          title: 'Error',
+          content: `No se pudo procesar el archivo Word: ${error.message}`,
+          images: [],
+          level: 1
+        }],
+        allImages: []
+      }
     }
   }
 }
