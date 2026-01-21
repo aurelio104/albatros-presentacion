@@ -1,6 +1,33 @@
 'use client'
 
-export default function VideoBackground() {
+interface VideoBackgroundProps {
+  videoSrc?: string
+  overlay?: {
+    opacity: number
+    color: string
+  }
+}
+
+export default function VideoBackground({ 
+  videoSrc = '/videos/video1.MP4',
+  overlay = { opacity: 0.4, color: 'rgba(0, 0, 0, 0.4)' }
+}: VideoBackgroundProps) {
+  // Convertir color rgba a formato válido
+  const overlayColor = overlay.color || 'rgba(0, 0, 0, 0.4)'
+  const overlayOpacity = overlay.opacity ?? 0.4
+  
+  // Extraer RGB del color si es rgba
+  let finalColor = overlayColor
+  if (overlayColor.startsWith('rgba')) {
+    const rgbaMatch = overlayColor.match(/rgba?\(([^)]+)\)/)
+    if (rgbaMatch) {
+      const values = rgbaMatch[1].split(',').map(v => v.trim())
+      if (values.length >= 3) {
+        finalColor = `rgba(${values[0]}, ${values[1]}, ${values[2]}, ${overlayOpacity})`
+      }
+    }
+  }
+
   return (
     <div
       style={{
@@ -18,18 +45,16 @@ export default function VideoBackground() {
         loop
         muted
         playsInline
+        preload="auto"
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'cover',
         }}
       >
-        {/* Video de fondo */}
-        <source src="/videos/video1.MP4" type="video/mp4" />
-        {/* Fallback si el video no carga */}
+        <source src={videoSrc} type="video/mp4" />
         Tu navegador no soporta videos HTML5.
       </video>
-      {/* Overlay oscuro para mejor legibilidad */}
       <div
         style={{
           position: 'absolute',
@@ -37,7 +62,7 @@ export default function VideoBackground() {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backgroundColor: finalColor,
         }}
       />
     </div>

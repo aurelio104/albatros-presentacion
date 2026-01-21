@@ -1,6 +1,31 @@
 'use client'
 
-export default function LogoCenter() {
+interface LogoCenterProps {
+  logoSrc?: string
+  position?: 'top' | 'center' | 'bottom'
+  size?: number
+}
+
+export default function LogoCenter({ 
+  logoSrc = '/images/logotB.png',
+  position = 'top',
+  size = 320
+}: LogoCenterProps) {
+  const getTopPosition = () => {
+    switch (position) {
+      case 'top': return '5%'
+      case 'center': return '50%'
+      case 'bottom': return '95%'
+      default: return '5%'
+    }
+  }
+
+  const getTransform = () => {
+    if (position === 'center') {
+      return 'translate(-50%, -50%)'
+    }
+    return 'translateX(-50%)'
+  }
   return (
     <>
       <style jsx>{`
@@ -93,9 +118,9 @@ export default function LogoCenter() {
 
         .logo-container {
           position: absolute;
-          top: 5%;
+          top: ${getTopPosition()};
           left: 50%;
-          transform: translateX(-50%);
+          transform: ${getTransform()};
           z-index: 2;
           pointer-events: none;
           display: flex;
@@ -120,7 +145,7 @@ export default function LogoCenter() {
 
         .logo-image {
           position: relative;
-          width: 320px;
+          width: ${size}px;
           height: auto;
           max-width: 90vw;
           filter: brightness(1.15) contrast(1.15) saturate(1.1);
@@ -324,7 +349,7 @@ export default function LogoCenter() {
         </div>
         <div className="logo-wrapper">
           <img
-            src="/images/logotB.png"
+            src={logoSrc}
             alt="Albatros Logo"
             className="logo-image"
             loading="eager"
