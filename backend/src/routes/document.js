@@ -693,6 +693,135 @@ async function extractFromPDF(fileBuffer) {
   }
 }
 
+// Extraer imágenes de DOCX
+async function extractImagesFromDocx(fileBuffer) {
+  const images = []
+  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+  await fs.mkdir(imagesDir, { recursive: true })
+
+  try {
+    const zip = new AdmZip(fileBuffer)
+    const zipEntries = zip.getEntries()
+
+    for (const entry of zipEntries) {
+      if (entry.entryName.startsWith('word/media/') && !entry.isDirectory) {
+        const buffer = entry.getData()
+        const ext = path.extname(entry.entryName).toLowerCase()
+        const imageName = `docx-${Date.now()}-${path.basename(entry.entryName)}`
+        const imagePath = path.join(imagesDir, imageName)
+        await fs.writeFile(imagePath, buffer)
+        const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+        images.push(`${backendUrl}/images/${imageName}`)
+        logger.debug(`✅ Imagen DOCX extraída: ${imageName}`)
+      }
+    }
+  } catch (error) {
+    logger.error('❌ Error extrayendo imágenes de DOCX:', error.message)
+  }
+  return images
+}
+
+// Extraer imágenes de PPTX
+async function extractImagesFromPptx(fileBuffer) {
+  const images = []
+  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+  await fs.mkdir(imagesDir, { recursive: true })
+
+  try {
+    const zip = new AdmZip(fileBuffer)
+    const zipEntries = zip.getEntries()
+
+    for (const entry of zipEntries) {
+      if (entry.entryName.startsWith('ppt/media/') && !entry.isDirectory) {
+        const buffer = entry.getData()
+        const ext = path.extname(entry.entryName).toLowerCase()
+        const imageName = `pptx-${Date.now()}-${path.basename(entry.entryName)}`
+        const imagePath = path.join(imagesDir, imageName)
+        await fs.writeFile(imagePath, buffer)
+        const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+        images.push(`${backendUrl}/images/${imageName}`)
+        logger.debug(`✅ Imagen PPTX extraída: ${imageName}`)
+      }
+    }
+  } catch (error) {
+    logger.error('❌ Error extrayendo imágenes de PPTX:', error.message)
+  }
+  return images
+}
+
+// Extraer contenido de PowerPoint
+async function extractFromPptx(fileBuffer) {
+  const sections = []
+  const allImages = await extractImagesFromPptx(fileBuffer) // Extraer imágenes primero
+
+  try {
+    const zip = new AdmZip(fileBuffer)
+    const slideXmlEntries = zip.getEntries().filter(entry => entry.entryName.startsWith('ppt/slides/slide') && entry.entryName.endsWith('.xml'))
+
+    for (let i = 0; i < slideXmlEntries.length; i++) {
+      const entry = slideXmlEntries[i]
+      const xmlContent = entry.getData().toString('utf8')
+
+      const result = await parseStringPromise(xmlContent)
+
+      let slideText = ''
+      // Buscar texto en diferentes elementos XML de PowerPoint
+      if (result['p:sld'] && result['p:sld']['p:cSld'] && result['p:sld']['p:cSld'][0]['p:spTree'] && result['p:sld']['p:cSld'][0]['p:spTree'][0]['p:sp']) {
+        for (const sp of result['p:sld']['p:cSld'][0]['p:spTree'][0]['p:sp']) {
+          if (sp['p:txBody'] && sp['p:txBody'][0]['a:p']) {
+            for (const p of sp['p:txBody'][0]['a:p']) {
+              if (p['a:r']) {
+                for (const r of p['a:r']) {
+                  if (r['a:t']) {
+                    slideText += r['a:t'][0] + ' '
+                  }
+                }
+              } else if (p['a:fld']) { // Handle fields like slide numbers
+                for (const fld of p['a:fld']) {
+                  if (fld['a:t']) {
+                    slideText += fld['a:t'][0] + ' '
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const titleMatch = slideText.match(/^(.*?)\n/) // Intentar obtener el primer párrafo como título
+      const title = titleMatch ? titleMatch[1].trim() : `Diapositiva ${i + 1}`
+      const content = slideText.trim()
+
+      // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
+      const slideImages = []
+      const imagesPerSlide = Math.ceil(allImages.length / slideXmlEntries.length)
+      const startIndex = i * imagesPerSlide
+      for (let j = 0; j < imagesPerSlide && (startIndex + j) < allImages.length; j++) {
+        slideImages.push(allImages[startIndex + j])
+      }
+
+      sections.push({
+        title,
+        content,
+        images: slideImages,
+        level: 1 // Todas las diapositivas son nivel 1 por defecto
+      })
+    }
+  } catch (error) {
+    logger.error('Error extrayendo PowerPoint:', error)
+    return {
+      sections: [{
+        title: 'Error',
+        content: 'No se pudo procesar el archivo PowerPoint',
+        images: [],
+        level: 1
+      }],
+      allImages: []
+    }
+  }
+  return { sections, allImages }
+}
+
 // Extraer de Excel
 async function extractFromExcel(fileBuffer) {
   try {
