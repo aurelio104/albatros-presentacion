@@ -27,6 +27,8 @@ export type WidgetCategory =
   | 'calidad' 
   | 'otro'
 
+export type WidgetDisplayMode = 'completo' | 'resumen'
+
 export interface WidgetData {
   id: number
   title: string
@@ -36,6 +38,7 @@ export interface WidgetData {
   animation?: WidgetAnimation
   style?: WidgetStyle
   order?: number
+  displayMode?: WidgetDisplayMode // 'completo' muestra todo, 'resumen' muestra solo preview
 }
 
 export interface AppSettings {

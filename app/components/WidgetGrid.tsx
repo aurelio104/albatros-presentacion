@@ -146,9 +146,17 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
           textAlign: 'center',
           lineHeight: '1.5',
           wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          wordBreak: 'break-word',
+          hyphens: 'auto',
+          maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
+          overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
+          textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
         }}
       >
-        {widget.preview}
+        {widget.displayMode === 'completo' 
+          ? widget.content.description || widget.preview
+          : widget.preview}
       </p>
       <div
         style={{

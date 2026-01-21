@@ -521,7 +521,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         category: section.category,
         images: sectionImages, // Imágenes específicas de esta sección
         order: index,
-        level: section.level || 1 // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
+        level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
+        displayMode: 'resumen' // Por defecto mostrar resumen, el admin puede cambiarlo a 'completo'
       }
     })
 

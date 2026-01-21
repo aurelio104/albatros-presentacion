@@ -136,6 +136,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         borderColor: 'rgba(255, 255, 255, 0.2)',
       },
       order: content.widgets.length,
+      displayMode: 'resumen', // Por defecto mostrar resumen
     }
 
     setContent({
@@ -271,6 +272,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         borderColor: 'rgba(255, 255, 255, 0.2)',
       },
       order: mergedOrder,
+      displayMode: widgetsToMerge[0].displayMode || 'resumen', // Mantener el modo del primer widget
     }
     
     // Eliminar widgets originales y agregar el unificado
