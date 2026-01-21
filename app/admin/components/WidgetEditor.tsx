@@ -153,13 +153,38 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
             </div>
 
             <div>
+              <label style={labelStyle}>Modo de Visualización</label>
+              <select
+                value={editedWidget.displayMode || 'resumen'}
+                onChange={(e) => handleChange('displayMode', e.target.value)}
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                <option value="resumen">Resumen (muestra preview corto)</option>
+                <option value="completo">Completo (muestra descripción completa)</option>
+              </select>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', marginTop: '0.5rem' }}>
+                {editedWidget.displayMode === 'completo' 
+                  ? 'El widget mostrará la descripción completa en la tarjeta'
+                  : 'El widget mostrará solo el preview (texto corto)'}
+              </p>
+            </div>
+
+            <div>
               <label style={labelStyle}>
-                Vista Previa
+                Vista Previa (texto corto - modo Resumen)
               </label>
               <textarea
                 value={editedWidget.preview}
                 onChange={(e) => handleChange('preview', e.target.value)}
-                rows={2}
+                rows={3}
                 style={{ ...inputStyle, resize: 'vertical' }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
@@ -169,6 +194,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
+                placeholder="Texto corto que se mostrará cuando el modo sea 'Resumen'"
               />
             </div>
           </div>
@@ -202,12 +228,17 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
             <div>
               <label style={labelStyle}>
-                Descripción
+                Descripción Completa
+                {editedWidget.displayMode === 'completo' && (
+                  <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', marginLeft: '0.5rem' }}>
+                    (se mostrará en el widget si el modo es "Completo")
+                  </span>
+                )}
               </label>
               <textarea
                 value={editedWidget.content.description}
                 onChange={(e) => handleChange('content.description', e.target.value)}
-                rows={4}
+                rows={6}
                 style={{ ...inputStyle, resize: 'vertical' }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
@@ -217,6 +248,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
                 }}
+                placeholder="Descripción completa que se mostrará cuando el modo sea 'Completo'"
               />
             </div>
 
