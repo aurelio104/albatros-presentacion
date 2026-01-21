@@ -6,6 +6,13 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
+import { PDFDocument } from 'pdf-lib'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// pdf-parse es CommonJS, necesitamos usar createRequire
+const require = createRequire(import.meta.url)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -516,6 +523,92 @@ function extractStructuredSections(fullText, images = []) {
   return { sections, allImages: images }
 }
 
+// Extraer imágenes del PDF usando pdf-lib
+async function extractImagesFromPDF(fileBuffer) {
+  const extractedImages = []
+  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+  await fs.mkdir(imagesDir, { recursive: true })
+  
+  try {
+    console.log('🖼️  Iniciando extracción de imágenes del PDF...')
+    
+    // Cargar el documento PDF
+    const pdfDoc = await PDFDocument.load(fileBuffer)
+    const pages = pdfDoc.getPages()
+    
+    console.log(`📄 PDF tiene ${pages.length} páginas`)
+    
+    // Obtener todas las imágenes embebidas en el PDF
+    const imageRefs = pdfDoc.context.enumerateIndirectObjects()
+    let imageIndex = 0
+    
+    for (const [ref, object] of imageRefs) {
+      try {
+        // Verificar si es un objeto de imagen (XObject con Subtype = Image)
+        if (object && object.dict && object.dict.get('Subtype')?.name === 'Image') {
+          const imageDict = object.dict
+          const width = imageDict.get('Width')
+          const height = imageDict.get('Height')
+          const filter = imageDict.get('Filter')
+          
+          // Obtener los datos de la imagen
+          const imageData = object.dict.get('stream')?.getBytes() || 
+                           object.dict.get('stream')?.content || 
+                           object.dict.get('stream')
+          
+          if (imageData && width && height) {
+            // Determinar el formato basado en el filtro
+            let extension = 'png'
+            let mimeType = 'image/png'
+            
+            if (filter) {
+              const filterName = Array.isArray(filter) ? filter[0]?.name : filter?.name
+              if (filterName === 'DCTDecode' || filterName === 'JPXDecode') {
+                extension = 'jpg'
+                mimeType = 'image/jpeg'
+              }
+            }
+            
+            // Convertir a Buffer si es necesario
+            let imageBuffer = imageData
+            if (imageData instanceof Uint8Array) {
+              imageBuffer = Buffer.from(imageData)
+            } else if (typeof imageData === 'string') {
+              imageBuffer = Buffer.from(imageData, 'base64')
+            }
+            
+            // Guardar la imagen
+            const timestamp = Date.now()
+            imageIndex++
+            const imageFilename = `pdf-${timestamp}-img${imageIndex}.${extension}`
+            const imagePath = path.join(imagesDir, imageFilename)
+            
+            await fs.writeFile(imagePath, imageBuffer)
+            
+            // URL relativa para el frontend (el backend sirve en /images/)
+            // En producción, usar la URL del backend de Koyeb
+            const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+            const imageUrl = `${backendUrl}/images/${imageFilename}`
+            extractedImages.push(imageUrl)
+            
+            console.log(`✅ Imagen extraída: ${imageFilename} (${width}x${height}, ${(imageBuffer.length / 1024).toFixed(2)} KB)`)
+          }
+        }
+      } catch (imgError) {
+        console.log(`⚠️  Error procesando objeto de imagen ${ref}:`, imgError.message)
+        // Continuar con la siguiente imagen
+      }
+    }
+    
+    console.log(`✅ Total de imágenes extraídas: ${extractedImages.length}`)
+    return extractedImages
+  } catch (error) {
+    console.error('❌ Error extrayendo imágenes del PDF:', error.message)
+    console.error('📚 Stack:', error.stack)
+    return []
+  }
+}
+
 // Extraer contenido de PDF con detección inteligente e imágenes
 async function extractFromPDF(fileBuffer) {
   try {
@@ -532,18 +625,21 @@ async function extractFromPDF(fileBuffer) {
     console.log('📄 Llamando a pdfParse con buffer de tamaño:', fileBuffer.length)
     console.log('🔍 Tipo de pdfParse:', typeof pdfParse)
     
+    // Extraer texto
     const data = await pdfParse(fileBuffer)
     const fullText = data.text
     const numPages = data.numpages || 1
     
     console.log(`✅ PDF procesado: ${numPages} páginas, ${fullText.length} caracteres`)
     
-    // Extraer secciones con asociación inteligente de imágenes
-    const result = extractStructuredSections(fullText, [])
+    // Extraer imágenes del PDF
+    const extractedImages = await extractImagesFromPDF(fileBuffer)
     
-    // Las imágenes del PDF no se pueden extraer directamente con pdf-parse
-    // Pero podemos detectar referencias a imágenes en el texto y asociarlas
-    // cuando el usuario las suba manualmente o se extraigan con otra librería
+    // Extraer secciones con asociación inteligente de imágenes
+    const result = extractStructuredSections(fullText, extractedImages)
+    
+    // Asegurar que las imágenes extraídas estén en allImages
+    result.allImages = extractedImages
     
     return result
   } catch (error) {
