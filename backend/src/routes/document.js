@@ -22,15 +22,67 @@ const upload = multer({
 
 // Interfaces
 const keywords = {
-  operaciones: ['operación', 'proceso', 'producción', 'manufactura', 'logística', 'cadena', 'suministro', 'operativo'],
-  economico: ['económico', 'financiero', 'costo', 'presupuesto', 'inversión', 'rentabilidad', 'ganancia', 'ahorro'],
-  tecnologico: ['tecnología', 'tecnológico', 'digital', 'software', 'sistema', 'plataforma', 'innovación', 'automatización', 'IA'],
+  operaciones: ['operación', 'proceso', 'producción', 'manufactura', 'logística', 'cadena', 'suministro', 'operativo', 'motor', 'aeronave', 'componente', 'reversible'],
+  economico: ['económico', 'financiero', 'costo', 'presupuesto', 'inversión', 'rentabilidad', 'ganancia', 'ahorro', 'adquisición', 'compra'],
+  tecnologico: ['tecnología', 'tecnológico', 'digital', 'software', 'sistema', 'plataforma', 'innovación', 'automatización', 'IA', 'material', 'fatiga', 'térmica', 'temperatura'],
   estrategico: ['estrategia', 'plan', 'objetivo', 'meta', 'visión', 'misión', 'dirección', 'liderazgo'],
   recursos: ['recurso', 'humano', 'personal', 'talento', 'equipo', 'organización', 'capacitación'],
-  calidad: ['calidad', 'estándar', 'certificación', 'mejora', 'optimización', 'eficiencia', 'excelencia']
+  calidad: ['calidad', 'estándar', 'certificación', 'mejora', 'optimización', 'eficiencia', 'excelencia', 'inspección', 'mantenimiento', 'grieta', 'falla', 'análisis', 'preventivo', 'correctivo']
 }
 
-// Extraer contenido estructurado de Word
+// Función inteligente para detectar nivel jerárquico de un título
+function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
+  const trimmed = line.trim()
+  const length = trimmed.length
+  
+  // Nivel 1: Títulos principales (muy cortos, mayúsculas, o con formato especial)
+  const isLevel1 = (
+    // Todo mayúsculas y corto
+    (/^[A-ZÁÉÍÓÚÑ\s]{3,50}$/.test(trimmed) && trimmed.length < 50) ||
+    // Título seguido de dos puntos al final
+    (trimmed.endsWith(':') && length < 60 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed)) ||
+    // Títulos comunes de documentos técnicos
+    /^(INFORME|ANÁLISIS|CONCLUSIÓN|RECOMENDACIÓN|OBSERVACIONES|INTRODUCCIÓN|RESUMEN|OBJETIVO|METODOLOGÍA|RESULTADOS|DISCUSIÓN)$/i.test(trimmed) ||
+    // Números romanos seguidos de título
+    /^[IVX]+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed)
+  )
+  
+  // Nivel 2: Subtítulos (medianos, pueden tener números)
+  const isLevel2 = (
+    // Número seguido de punto y texto
+    /^\d+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    // Letra seguida de punto y texto
+    /^[a-z][\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    // Título en mayúsculas pero más largo
+    (/^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && length > 20 && length < 80 && !trimmed.includes('.'))
+  )
+  
+  // Nivel 3: Sub-subtítulos (viñetas, guiones)
+  const isLevel3 = (
+    /^[•\-\*]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    /^[a-z]\)\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed)
+  )
+  
+  // Contexto adicional: verificar si la línea siguiente es contenido
+  const hasContentAfter = nextLine && nextLine.trim().length > 50
+  const hasTitleBefore = previousLine && (
+    /^[A-ZÁÉÍÓÚÑ]/.test(previousLine.trim()) ||
+    previousLine.trim().length < 30
+  )
+  
+  if (isLevel1 && hasContentAfter) return 1
+  if (isLevel2 && hasContentAfter) return 2
+  if (isLevel3 && hasContentAfter) return 3
+  
+  // Si no cumple criterios estrictos pero parece título por contexto
+  if (length < 80 && length > 5 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && hasContentAfter && !hasTitleBefore) {
+    return 2 // Asumir nivel 2 por defecto
+  }
+  
+  return null // No es un título
+}
+
+// Extraer contenido estructurado de Word con detección inteligente
 async function extractStructuredContentFromWord(fileBuffer) {
   try {
     const htmlResult = await mammoth.convertToHtml({ buffer: fileBuffer })
@@ -64,78 +116,7 @@ async function extractStructuredContentFromWord(fileBuffer) {
     const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
     const fullText = textResult.value
     
-    // Detectar títulos y secciones
-    const lines = fullText.split(/\r?\n/).filter(l => l.trim().length > 0)
-    const sections = []
-    
-    let currentSection = null
-    let currentContent = []
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
-      
-      const isTitle = (
-        line.length < 100 &&
-        (
-          /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{2,}$/.test(line) ||
-          /^\d+[\.\)]\s/.test(line) ||
-          /^[IVX]+[\.\)]\s/.test(line) ||
-          /^[•\-\*]\s/.test(line) ||
-          (line.length < 50 && i < lines.length - 1 && lines[i + 1]?.trim().length > 50)
-        )
-      )
-      
-      if (isTitle && currentSection) {
-        sections.push({
-          ...currentSection,
-          content: currentContent.join('\n').trim()
-        })
-        currentSection = {
-          title: line.replace(/^[\d•\-\*IVX\.\)\s]+/, '').trim(),
-          content: '',
-          images: [],
-          level: 1
-        }
-        currentContent = []
-      } else if (isTitle && !currentSection) {
-        currentSection = {
-          title: line.replace(/^[\d•\-\*IVX\.\)\s]+/, '').trim(),
-          content: '',
-          images: [],
-          level: 1
-        }
-        currentContent = []
-      } else if (currentSection) {
-        currentContent.push(line)
-      }
-    }
-    
-    if (currentSection) {
-      sections.push({
-        ...currentSection,
-        content: currentContent.join('\n').trim()
-      })
-    }
-    
-    if (sections.length === 0) {
-      const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
-      sections.push(...paragraphs.map((para, idx) => ({
-        title: `Sección ${idx + 1}`,
-        content: para.trim(),
-        images: [],
-        level: 1
-      })))
-    }
-    
-    // Distribuir imágenes
-    images.forEach((img, idx) => {
-      const sectionIndex = Math.floor((idx / images.length) * sections.length)
-      if (sections[sectionIndex]) {
-        sections[sectionIndex].images.push(img)
-      }
-    })
-    
-    return { sections, allImages: images }
+    return extractStructuredSections(fullText, images)
   } catch (error) {
     console.error('Error extrayendo contenido:', error)
     const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
@@ -151,87 +132,101 @@ async function extractStructuredContentFromWord(fileBuffer) {
   }
 }
 
-// Extraer contenido de PDF
+// Función inteligente para extraer secciones estructuradas
+function extractStructuredSections(fullText, images = []) {
+  const lines = fullText.split(/\r?\n/).filter(l => l.trim().length > 0)
+  const sections = []
+  
+  let currentSection = null
+  let currentContent = []
+  let currentLevel = 1
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    const previousLine = i > 0 ? lines[i - 1].trim() : ''
+    const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : ''
+    
+    // Detectar si es un título y su nivel
+    const titleLevel = detectTitleLevel(line, previousLine, nextLine, i, lines)
+    
+    if (titleLevel !== null) {
+      // Guardar sección anterior si existe
+      if (currentSection && (currentContent.length > 0 || currentSection.title)) {
+        sections.push({
+          ...currentSection,
+          content: currentContent.join('\n').trim(),
+          level: currentLevel
+        })
+      }
+      
+      // Crear nueva sección
+      const cleanTitle = line
+        .replace(/^##?\s+/, '') // Markdown
+        .replace(/^[\d•\-\*IVX\.\)\s]+/, '') // Números/viñetas
+        .replace(/:$/, '') // Dos puntos finales
+        .trim()
+      
+      currentSection = {
+        title: cleanTitle || `Sección ${sections.length + 1}`,
+        content: '',
+        images: [],
+        level: titleLevel
+      }
+      currentLevel = titleLevel
+      currentContent = []
+    } else if (currentSection) {
+      // Agregar contenido a la sección actual
+      currentContent.push(line)
+    } else if (line.length > 50) {
+      // Si no hay sección actual pero hay contenido, crear una
+      currentSection = {
+        title: 'Introducción',
+        content: line,
+        images: [],
+        level: 1
+      }
+      currentContent = []
+    }
+  }
+  
+  // Agregar última sección
+  if (currentSection) {
+    sections.push({
+      ...currentSection,
+      content: currentContent.join('\n').trim(),
+      level: currentLevel
+    })
+  }
+  
+  // Si no se detectaron secciones, crear una con todo el contenido
+  if (sections.length === 0) {
+    const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
+    sections.push(...paragraphs.map((para, idx) => ({
+      title: `Sección ${idx + 1}`,
+      content: para.trim(),
+      images: [],
+      level: 1
+    })))
+  }
+  
+  // Distribuir imágenes entre secciones
+  images.forEach((img, idx) => {
+    const sectionIndex = Math.floor((idx / images.length) * sections.length)
+    if (sections[sectionIndex]) {
+      sections[sectionIndex].images.push(img)
+    }
+  })
+  
+  return { sections, allImages: images }
+}
+
+// Extraer contenido de PDF con detección inteligente
 async function extractFromPDF(fileBuffer) {
   try {
     const data = await pdfParse(fileBuffer)
     const fullText = data.text
     
-    // Detectar secciones basándose en títulos en mayúsculas o con formato especial
-    const lines = fullText.split(/\r?\n/).filter(l => l.trim().length > 0)
-    const sections = []
-    
-    let currentSection = null
-    let currentContent = []
-    
-    // Patrones para detectar títulos de secciones
-    const titlePatterns = [
-      /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{3,}$/, // Todo mayúsculas
-      /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+:$/, // Título seguido de dos puntos
-      /^##?\s+/, // Markdown style
-      /^\d+[\.\)]\s+[A-Z]/, // Número seguido de texto en mayúscula
-    ]
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
-      
-      // Detectar si es un título
-      const isTitle = titlePatterns.some(pattern => pattern.test(line)) ||
-        (line.length < 80 && 
-         line.length > 5 && 
-         /^[A-ZÁÉÍÓÚÑ]/.test(line) &&
-         i < lines.length - 1 && 
-         lines[i + 1]?.trim().length > 50)
-      
-      if (isTitle && currentSection) {
-        // Guardar sección anterior
-        sections.push({
-          ...currentSection,
-          content: currentContent.join('\n').trim()
-        })
-        
-        // Iniciar nueva sección
-        currentSection = {
-          title: line.replace(/^##?\s+/, '').replace(/:$/, '').trim(),
-          content: '',
-          images: [],
-          level: 1
-        }
-        currentContent = []
-      } else if (isTitle && !currentSection) {
-        // Primera sección
-        currentSection = {
-          title: line.replace(/^##?\s+/, '').replace(/:$/, '').trim(),
-          content: '',
-          images: [],
-          level: 1
-        }
-        currentContent = []
-      } else if (currentSection) {
-        currentContent.push(line)
-      }
-    }
-    
-    // Añadir última sección
-    if (currentSection) {
-      sections.push({
-        ...currentSection,
-        content: currentContent.join('\n').trim()
-      })
-    }
-    
-    // Si no se detectaron secciones, crear una con todo el contenido
-    if (sections.length === 0) {
-      const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
-      sections.push(...paragraphs.map((para, idx) => ({
-        title: `Sección ${idx + 1}`,
-        content: para.trim(),
-        images: [],
-        level: 1
-      })))
-    }
-    
-    return sections
+    return extractStructuredSections(fullText, [])
   } catch (error) {
     console.error('Error extrayendo PDF:', error)
     return [{
@@ -289,25 +284,32 @@ async function extractFromExcel(fileBuffer) {
   }
 }
 
-// Categorizar contenido
+// Categorizar contenido de forma inteligente
 function categorizeContent(text) {
   const textLower = text.toLowerCase()
   let maxScore = 0
   let detectedCategory = 'otro'
-
+  
+  // Contar ocurrencias de palabras clave con pesos
   for (const [category, words] of Object.entries(keywords)) {
-    const score = words.reduce((acc, word) => {
-      const regex = new RegExp(word, 'gi')
+    let score = 0
+    
+    for (const word of words) {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi')
       const matches = textLower.match(regex)
-      return acc + (matches ? matches.length : 0)
-    }, 0)
+      if (matches) {
+        // Palabras más específicas tienen mayor peso
+        const weight = word.length > 8 ? 3 : word.length > 5 ? 2 : 1
+        score += matches.length * weight
+      }
+    }
     
     if (score > maxScore) {
       maxScore = score
       detectedCategory = category
     }
   }
-
+  
   return detectedCategory
 }
 
@@ -322,20 +324,21 @@ router.post('/', upload.single('file'), async (req, res) => {
 
     const fileName = req.file.originalname.toLowerCase()
     const fileBuffer = req.file.buffer
+    const fileMimeType = req.file.mimetype || ''
     const autoCreate = req.body.autoCreate === 'true'
 
     let sections = []
     let allImages = []
 
     // Procesar según el tipo de archivo
-    const fileMimeType = req.file.mimetype || ''
-    
     // Verificar PDF primero (puede tener diferentes extensiones o MIME types)
     if (fileName.endsWith('.pdf') || 
         fileMimeType === 'application/pdf' ||
         fileMimeType.includes('pdf')) {
       console.log('Procesando PDF:', fileName, fileMimeType)
-      sections = await extractFromPDF(fileBuffer)
+      const extracted = await extractFromPDF(fileBuffer)
+      sections = extracted.sections || extracted
+      allImages = extracted.allImages || []
     } else if (fileName.endsWith('.docx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const extracted = await extractStructuredContentFromWord(fileBuffer)
@@ -369,13 +372,14 @@ router.post('/', upload.single('file'), async (req, res) => {
       })
     }
 
-    // Categorizar cada sección
+    // Categorizar cada sección de forma inteligente
     const categorizedSections = sections.map((section) => {
-      const category = categorizeContent(section.title + ' ' + section.content)
+      const fullText = `${section.title} ${section.content}`.toLowerCase()
+      const category = categorizeContent(fullText)
       return { ...section, category }
     })
 
-    // Crear widgets
+    // Crear widgets con información de nivel jerárquico
     const widgets = categorizedSections.map((section, index) => {
       const preview = section.content.substring(0, 150).trim() + (section.content.length > 150 ? '...' : '')
       const description = section.content.substring(0, 1000).trim()
@@ -387,8 +391,9 @@ router.post('/', upload.single('file'), async (req, res) => {
         description,
         additionalInfo,
         category: section.category,
-        images: section.images,
-        order: index
+        images: section.images || [],
+        order: index,
+        level: section.level || 1 // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
       }
     })
 
@@ -397,7 +402,14 @@ router.post('/', upload.single('file'), async (req, res) => {
       widgets,
       totalSections: sections.length,
       totalImages: allImages.length,
-      fileName: req.file.originalname
+      fileName: req.file.originalname,
+      structure: {
+        levels: {
+          titles: widgets.filter(w => w.level === 1).length,
+          subtitles: widgets.filter(w => w.level === 2).length,
+          subSubtitles: widgets.filter(w => w.level === 3).length
+        }
+      }
     })
   } catch (error) {
     console.error('Error procesando documento:', error)
