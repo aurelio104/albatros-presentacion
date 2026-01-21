@@ -328,22 +328,38 @@ router.post('/', upload.single('file'), async (req, res) => {
     let allImages = []
 
     // Procesar según el tipo de archivo
-    if (fileName.endsWith('.docx')) {
+    const fileMimeType = req.file.mimetype || ''
+    
+    // Verificar PDF primero (puede tener diferentes extensiones o MIME types)
+    if (fileName.endsWith('.pdf') || 
+        fileMimeType === 'application/pdf' ||
+        fileMimeType.includes('pdf')) {
+      console.log('Procesando PDF:', fileName, fileMimeType)
+      sections = await extractFromPDF(fileBuffer)
+    } else if (fileName.endsWith('.docx') || 
+               fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const extracted = await extractStructuredContentFromWord(fileBuffer)
       sections = extracted.sections
       allImages = extracted.allImages
-    } else if (fileName.endsWith('.xlsx')) {
+    } else if (fileName.endsWith('.xlsx') || 
+               fileMimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
       sections = await extractFromExcel(fileBuffer)
-    } else if (fileName.endsWith('.pdf') || req.file.mimetype === 'application/pdf') {
-      sections = await extractFromPDF(fileBuffer)
-    } else if (fileName.endsWith('.pptx')) {
+    } else if (fileName.endsWith('.pptx') || 
+               fileMimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
       return res.status(400).json({
         error: 'PowerPoint (.pptx) requiere procesamiento adicional',
         suggestion: 'Exporta el contenido a Word (.docx) o Excel (.xlsx)'
       })
     } else {
+      console.error('Formato no reconocido:', {
+        fileName,
+        mimeType: fileMimeType,
+        originalName: req.file.originalname
+      })
       return res.status(400).json({
-        error: 'Formato no soportado. Use .docx, .xlsx, .pdf o .pptx'
+        error: 'Formato no soportado. Use .docx, .xlsx, .pdf o .pptx',
+        received: `Archivo: ${req.file.originalname}, Tipo MIME: ${fileMimeType || 'desconocido'}`,
+        hint: 'Asegúrate de que el archivo tenga la extensión correcta (.pdf)'
       })
     }
 
