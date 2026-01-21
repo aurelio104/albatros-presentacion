@@ -5,10 +5,10 @@
     "image": "node:18-alpine"
   },
   "build": {
-    "command": "cd backend && npm install && npm start"
+    "command": "npm install --production && npm list pdf-parse"
   },
   "run": {
-    "command": "cd backend && npm start"
+    "command": "node src/server.js"
   },
   "env": [
     {
