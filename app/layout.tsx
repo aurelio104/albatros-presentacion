@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -16,13 +16,14 @@ export const metadata: Metadata = {
     shortcut: '/images/logoB.png',
   },
   manifest: '/manifest.json',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#667eea',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
 }
 
 export default function RootLayout({
@@ -36,7 +37,6 @@ export default function RootLayout({
         <link rel="icon" href="/images/logoB.png" type="image/png" />
         <link rel="apple-touch-icon" href="/images/logoB.png" />
         <link rel="shortcut icon" href="/images/logoB.png" />
-        <meta name="theme-color" content="#667eea" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Albatros" />
