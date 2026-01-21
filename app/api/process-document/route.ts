@@ -158,14 +158,15 @@ async function extractFromExcel(fileBuffer: Buffer): Promise<ExtractedSection[]>
     
     workbook.SheetNames.forEach((sheetName, sheetIdx) => {
       const worksheet = workbook.Sheets[sheetName]
-      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][]
       
       // Primera fila como título, resto como contenido
-      if (data.length > 0) {
-        const title = String(data[0]?.[0] || `Hoja ${sheetIdx + 1}`).trim()
+      if (data.length > 0 && Array.isArray(data[0])) {
+        const firstRow = data[0] as any[]
+        const title = String(firstRow[0] || `Hoja ${sheetIdx + 1}`).trim()
         const content = data.slice(1)
-          .map(row => row.filter(cell => cell).join(' | '))
-          .filter(row => row.trim().length > 0)
+          .map((row: any[]) => Array.isArray(row) ? row.filter((cell: any) => cell).join(' | ') : '')
+          .filter((row: string) => row.trim().length > 0)
           .join('\n')
         
         if (content.trim().length > 0) {
