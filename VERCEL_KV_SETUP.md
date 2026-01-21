@@ -46,6 +46,16 @@ Una vez configurado, el sistema:
 - ✅ Leerá contenido desde Vercel KV en producción
 - ✅ Usará archivos locales en desarrollo (si están disponibles)
 - ✅ Creará contenido por defecto si no existe
+- ✅ Migrará automáticamente el contenido existente de `data/content.json` a KV
+
+## 🔄 Migración Inicial
+
+El contenido existente en `data/content.json` se migrará automáticamente:
+1. La primera vez que se lea el contenido, si no existe en KV, se leerá del archivo
+2. La primera vez que se guarde, se guardará en KV
+3. A partir de ahí, todo se manejará desde KV
+
+**Nota**: El archivo `data/content.json` seguirá existiendo como respaldo, pero en producción se usará KV.
 
 ## 🔍 Troubleshooting
 
