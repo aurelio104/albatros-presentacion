@@ -27,13 +27,20 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadContent = async () => {
     try {
-      const response = await fetch('/api/content')
+      const response = await fetch('/api/content', { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
         setContent(data)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error al cargar contenido:', errorData)
+        setMessage({ type: 'error', text: errorData?.error || 'Error al cargar el contenido' })
+        setTimeout(() => setMessage(null), 5000)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al cargar contenido:', error)
+      setMessage({ type: 'error', text: `Error de conexión: ${error?.message || 'Error desconocido'}` })
+      setTimeout(() => setMessage(null), 5000)
     } finally {
       setLoading(false)
     }
@@ -56,12 +63,16 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         setMessage({ type: 'success', text: 'Contenido guardado exitosamente' })
         setTimeout(() => setMessage(null), 3000)
       } else {
-        setMessage({ type: 'error', text: 'Error al guardar el contenido' })
-        setTimeout(() => setMessage(null), 3000)
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData?.error || errorData?.details || 'Error al guardar el contenido'
+        console.error('Error al guardar:', errorData)
+        setMessage({ type: 'error', text: errorMsg })
+        setTimeout(() => setMessage(null), 5000)
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error al guardar el contenido' })
-      setTimeout(() => setMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error al guardar el contenido:', error)
+      setMessage({ type: 'error', text: `Error de conexión: ${error?.message || 'Error desconocido'}` })
+      setTimeout(() => setMessage(null), 5000)
     } finally {
       setSaving(false)
     }

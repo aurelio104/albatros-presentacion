@@ -61,10 +61,14 @@ export async function POST(request: NextRequest) {
       size: file.size,
       type: file.type
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al subir archivo:', error)
     return NextResponse.json(
-      { error: 'Error al subir el archivo' },
+      { 
+        error: 'Error al subir el archivo',
+        details: error?.message || 'Error desconocido',
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }

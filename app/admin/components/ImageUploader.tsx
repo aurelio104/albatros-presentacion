@@ -46,7 +46,7 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.url) {
         if (onUpload) {
           onUpload(data.url)
         }
@@ -54,10 +54,13 @@ export default function ImageUploader({ onUpload }: ImageUploaderProps) {
         setPreview(null)
         e.target.value = '' // Reset input
       } else {
-        alert(data.error || 'Error al subir la imagen')
+        const errorMsg = data?.error || data?.details || 'Error al subir la imagen'
+        console.error('Error en upload:', data)
+        alert(`Error: ${errorMsg}`)
       }
-    } catch (error) {
-      alert('Error al subir la imagen')
+    } catch (error: any) {
+      console.error('Error al subir la imagen:', error)
+      alert(`Error de conexión: ${error?.message || 'Error desconocido'}`)
     } finally {
       setUploading(false)
     }
