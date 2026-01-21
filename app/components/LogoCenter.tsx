@@ -299,24 +299,59 @@ export default function LogoCenter({
           left: 50%;
         }
 
+        /* Large screens */
+        @media (min-width: 1400px) {
+          .logo-image {
+            width: ${Math.min(size * 1.1, 400)}px;
+          }
+        }
+
+        /* Tablets */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .logo-image {
+            width: ${Math.min(size * 0.85, 280)}px;
+          }
+          .halo {
+            width: 380px;
+            height: 380px;
+          }
+          .halo::before {
+            width: 320px;
+            height: 320px;
+          }
+          .halo::after {
+            width: 420px;
+            height: 420px;
+          }
+        }
+
         @media (max-width: 768px) {
           .logo-container {
             top: 3% !important;
           }
           .logo-image {
-            width: 180px;
+            width: clamp(140px, 25vw, 180px);
           }
           .halo {
-            width: 280px;
-            height: 280px;
+            width: clamp(220px, 40vw, 280px);
+            height: clamp(220px, 40vw, 280px);
           }
           .halo::before {
-            width: 230px;
-            height: 230px;
+            width: clamp(180px, 35vw, 230px);
+            height: clamp(180px, 35vw, 230px);
           }
           .halo::after {
-            width: 320px;
-            height: 320px;
+            width: clamp(260px, 45vw, 320px);
+            height: clamp(260px, 45vw, 320px);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .logo-container {
+            top: 2.5% !important;
+          }
+          .logo-image {
+            width: clamp(120px, 22vw, 160px);
           }
         }
 
@@ -325,19 +360,56 @@ export default function LogoCenter({
             top: 2% !important;
           }
           .logo-image {
-            width: 140px;
+            width: clamp(100px, 20vw, 140px);
           }
           .halo {
-            width: 220px;
-            height: 220px;
+            width: clamp(180px, 35vw, 220px);
+            height: clamp(180px, 35vw, 220px);
           }
           .halo::before {
-            width: 180px;
-            height: 180px;
+            width: clamp(150px, 30vw, 180px);
+            height: clamp(150px, 30vw, 180px);
           }
           .halo::after {
-            width: 260px;
-            height: 260px;
+            width: clamp(210px, 40vw, 260px);
+            height: clamp(210px, 40vw, 260px);
+          }
+        }
+
+        @media (max-width: 360px) {
+          .logo-image {
+            width: clamp(90px, 18vw, 120px);
+          }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+          .logo-container {
+            top: 1% !important;
+          }
+          .logo-image {
+            width: clamp(80px, 15vw, 120px);
+          }
+          .halo {
+            width: clamp(150px, 30vw, 200px);
+            height: clamp(150px, 30vw, 200px);
+          }
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .logo-wrapper {
+            animation: none;
+          }
+          .logo-wrapper:hover {
+            animation: none;
+          }
+          .halo, .halo::before, .halo::after {
+            animation: none;
+          }
+          .particle {
+            animation: none;
+            opacity: 0;
           }
         }
       `}</style>

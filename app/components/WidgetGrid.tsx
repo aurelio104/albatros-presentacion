@@ -63,14 +63,17 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       style={{
         background: defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         border: `1px solid ${defaultStyle.borderColor || 'rgba(255, 255, 255, 0.2)'}`,
         borderRadius: defaultStyle.borderRadius ? `${defaultStyle.borderRadius}px` : '16px',
         padding: '2rem',
         minWidth: '280px',
         maxWidth: '320px',
+        width: '100%',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        WebkitTapHighlightColor: 'transparent',
         ...animationStyle,
       }}
       onMouseEnter={(e) => {
@@ -87,10 +90,12 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       <h2
         style={{
           color: defaultStyle.textColor || '#ffffff',
-          fontSize: '1.5rem',
+          fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
           fontWeight: 'bold',
           marginBottom: '1rem',
           textAlign: 'center',
+          lineHeight: '1.3',
+          wordWrap: 'break-word',
         }}
       >
         {widget.title}
@@ -98,9 +103,10 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       <p
         style={{
           color: defaultStyle.textColor ? `${defaultStyle.textColor}dd` : 'rgba(255, 255, 255, 0.9)',
-          fontSize: '1rem',
+          fontSize: 'clamp(0.9rem, 3vw, 1rem)',
           textAlign: 'center',
           lineHeight: '1.5',
+          wordWrap: 'break-word',
         }}
       >
         {widget.preview}
@@ -110,7 +116,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
           marginTop: '1.5rem',
           textAlign: 'center',
           color: defaultStyle.textColor ? `${defaultStyle.textColor}cc` : 'rgba(255, 255, 255, 0.8)',
-          fontSize: '0.9rem',
+          fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)',
         }}
       >
         Click para más información →
@@ -134,26 +140,69 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           align-items: center;
           gap: 2rem;
           padding: 2rem;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
         }
 
         .widget-item {
           min-width: 280px;
           max-width: 320px;
+          flex: 0 1 auto;
         }
 
+        /* Large screens */
+        @media (min-width: 1400px) {
+          .widget-grid {
+            gap: 2.5rem;
+            padding: 2.5rem;
+          }
+          .widget-item {
+            min-width: 300px;
+            max-width: 340px;
+          }
+        }
+
+        /* Medium screens */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .widget-grid {
+            gap: 1.5rem;
+            padding: 1.5rem;
+          }
+          .widget-item {
+            min-width: 260px;
+            max-width: 300px;
+          }
+        }
+
+        /* Tablets */
         @media (max-width: 768px) {
           .widget-grid {
             padding-top: 200px;
             align-items: flex-start;
             padding-bottom: 2rem;
+            gap: 1.5rem;
           }
           .widget-item {
-            min-width: 250px;
-            max-width: 100%;
-            width: calc(50% - 1rem);
+            min-width: calc(50% - 0.75rem);
+            max-width: calc(50% - 0.75rem);
+            width: calc(50% - 0.75rem);
           }
         }
 
+        /* Small tablets */
+        @media (max-width: 640px) {
+          .widget-grid {
+            padding-top: 180px;
+            gap: 1.25rem;
+          }
+          .widget-item {
+            min-width: calc(50% - 0.625rem);
+            max-width: calc(50% - 0.625rem);
+            width: calc(50% - 0.625rem);
+          }
+        }
+
+        /* Mobile */
         @media (max-width: 480px) {
           .widget-grid {
             padding-top: 160px;
@@ -165,6 +214,32 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
             min-width: 100%;
             max-width: 100%;
             width: 100%;
+          }
+        }
+
+        /* Very small mobile */
+        @media (max-width: 360px) {
+          .widget-grid {
+            padding-top: 140px;
+            gap: 0.75rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+          }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+          .widget-grid {
+            padding-top: 120px;
+            align-items: flex-start;
+            padding-bottom: 1rem;
+          }
+        }
+
+        /* Touch devices */
+        @media (hover: none) and (pointer: coarse) {
+          .widget-item {
+            touch-action: manipulation;
           }
         }
       `}</style>
