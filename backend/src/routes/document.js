@@ -24,42 +24,77 @@ function getPdfParse() {
   try {
     const pdfParseModule = require('pdf-parse')
     console.log('📦 pdf-parse cargado. Tipo:', typeof pdfParseModule)
-    console.log('📦 pdf-parse es función directa:', typeof pdfParseModule === 'function')
+    console.log('🔑 Claves disponibles:', Object.keys(pdfParseModule || {}))
     
     // pdf-parse puede exportarse de diferentes formas dependiendo de la versión
     let pdfParse
     
+    // Verificar si es función directa (versiones antiguas)
     if (typeof pdfParseModule === 'function') {
       pdfParse = pdfParseModule
       console.log('✅ pdfParse asignado como función directa')
-    } else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
+    } 
+    // Verificar si tiene .default (ES modules)
+    else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
       pdfParse = pdfParseModule.default
       console.log('✅ pdfParse asignado desde .default')
-    } else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
+    } 
+    // Verificar si tiene PDFParse (clase en versiones nuevas)
+    else if (pdfParseModule && pdfParseModule.PDFParse && typeof pdfParseModule.PDFParse === 'function') {
+      // PDFParse es una clase, necesitamos instanciarla o usar su método estático
+      // En versiones nuevas, puede tener un método estático o necesitar instanciación
+      if (typeof pdfParseModule.PDFParse.parse === 'function') {
+        pdfParse = pdfParseModule.PDFParse.parse.bind(pdfParseModule.PDFParse)
+        console.log('✅ pdfParse asignado desde PDFParse.parse (método estático)')
+      } else {
+        // Intentar usar la clase directamente si tiene un método callable
+        pdfParse = pdfParseModule.PDFParse
+        console.log('✅ pdfParse asignado desde PDFParse (clase)')
+      }
+    }
+    // Verificar si tiene pdfParse (camelCase)
+    else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
       pdfParse = pdfParseModule.pdfParse
       console.log('✅ pdfParse asignado desde .pdfParse')
-    } else {
-      // Último intento: usar el módulo directamente
-      pdfParse = pdfParseModule
-      console.log('⚠️ pdfParse asignado directamente (puede no ser función)')
+    }
+    // Último intento: buscar cualquier función exportada
+    else {
+      // Buscar cualquier función en el módulo
+      const functionKeys = Object.keys(pdfParseModule || {}).filter(key => 
+        typeof pdfParseModule[key] === 'function' && 
+        key.toLowerCase().includes('parse')
+      )
+      
+      if (functionKeys.length > 0) {
+        pdfParse = pdfParseModule[functionKeys[0]]
+        console.log(`✅ pdfParse asignado desde .${functionKeys[0]}`)
+      } else {
+        // Si no encontramos función, intentar usar el módulo completo
+        // Algunas versiones de pdf-parse exportan el módulo completo como función
+        pdfParse = pdfParseModule
+        console.log('⚠️ pdfParse asignado directamente (puede no ser función)')
+      }
     }
     
     console.log('📊 pdfParse final. Tipo:', typeof pdfParse)
     
+    // Verificar que sea una función o una clase instanciable
     if (typeof pdfParse !== 'function') {
       console.error('❌ ERROR: pdfParse no es una función después de procesar')
       console.error('📦 pdfParseModule completo:', pdfParseModule)
       console.error('🔑 Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
-      console.error('📋 Tipo de pdfParseModule:', typeof pdfParseModule)
       
-      // Intentar una última vez con diferentes formas
-      if (pdfParseModule && pdfParseModule.constructor && pdfParseModule.constructor.name === 'Function') {
-        pdfParse = pdfParseModule
-        console.log('🔄 Reintentando con constructor')
-      }
-      
-      if (typeof pdfParse !== 'function') {
-        throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}`)
+      // Último intento: si PDFParse es una clase, crear un wrapper
+      if (pdfParseModule && pdfParseModule.PDFParse) {
+        console.log('🔄 Intentando crear wrapper para PDFParse class')
+        // Crear wrapper que instancie la clase y llame al método correcto
+        pdfParse = async (buffer) => {
+          const parser = new pdfParseModule.PDFParse(buffer)
+          return await parser.parse()
+        }
+        console.log('✅ Wrapper creado para PDFParse')
+      } else {
+        throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}. Claves: ${Object.keys(pdfParseModule || {}).join(', ')}`)
       }
     } else {
       console.log('✅ pdfParse verificado como función. Listo para usar.')
