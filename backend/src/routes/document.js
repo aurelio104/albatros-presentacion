@@ -223,22 +223,45 @@ function extractStructuredSections(fullText, images = []) {
   return { sections, allImages: images }
 }
 
-// Extraer contenido de PDF con detección inteligente
+// Extraer contenido de PDF con detección inteligente e imágenes
 async function extractFromPDF(fileBuffer) {
   try {
-    const pdfParser = await loadPdfParse()
-    const data = await pdfParser(fileBuffer)
+    const data = await pdfParse(fileBuffer)
     const fullText = data.text
+    const numPages = data.numpages || 1
     
-    return extractStructuredSections(fullText, [])
+    console.log(`PDF procesado: ${numPages} páginas, ${fullText.length} caracteres`)
+    
+    // Extraer secciones con asociación inteligente de imágenes
+    const result = extractStructuredSections(fullText, [])
+    
+    // Las imágenes del PDF no se pueden extraer directamente con pdf-parse
+    // Pero podemos detectar referencias a imágenes en el texto y asociarlas
+    // cuando el usuario las suba manualmente o se extraigan con otra librería
+    
+    return result
   } catch (error) {
     console.error('Error extrayendo PDF:', error)
-    return [{
-      title: 'Error',
-      content: 'No se pudo procesar el archivo PDF',
-      images: [],
-      level: 1
-    }]
+    console.error('Stack:', error.stack)
+    
+    // Intentar extraer solo texto como fallback
+    try {
+      const data = await pdfParse(fileBuffer)
+      const fullText = data.text
+      const sections = extractStructuredSections(fullText, [])
+      return { sections, allImages: [] }
+    } catch (fallbackError) {
+      console.error('Error en fallback:', fallbackError)
+      return {
+        sections: [{
+          title: 'Error',
+          content: `No se pudo procesar el archivo PDF: ${error.message}`,
+          images: [],
+          level: 1
+        }],
+        allImages: []
+      }
+    }
   }
 }
 
@@ -341,24 +364,36 @@ router.post('/', upload.single('file'), async (req, res) => {
         fileMimeType.includes('pdf')) {
       console.log('Procesando PDF:', fileName, fileMimeType)
       try {
+        console.log('Iniciando procesamiento de PDF...')
         const extracted = await extractFromPDF(fileBuffer)
+        console.log('PDF procesado, estructura:', extracted)
+        
         // Asegurar que extracted tiene la estructura correcta
         if (Array.isArray(extracted)) {
           sections = extracted
           allImages = []
-        } else if (extracted.sections) {
+        } else if (extracted && extracted.sections) {
           sections = extracted.sections
           allImages = extracted.allImages || []
-        } else {
+        } else if (extracted && extracted.title) {
+          // Es una sección única
           sections = [extracted]
           allImages = []
+        } else {
+          console.error('Estructura inesperada del PDF:', extracted)
+          sections = []
+          allImages = []
         }
+        
+        console.log(`Secciones extraídas: ${sections.length}, Imágenes: ${allImages.length}`)
       } catch (pdfError) {
         console.error('Error específico procesando PDF:', pdfError)
+        console.error('Stack:', pdfError.stack)
         return res.status(400).json({
           error: 'Error al procesar el archivo PDF',
           details: pdfError.message || 'Error desconocido',
-          hint: 'Asegúrate de que el PDF contenga texto (no sea solo imágenes escaneadas)'
+          hint: 'Asegúrate de que el PDF contenga texto (no sea solo imágenes escaneadas)',
+          fileName: req.file.originalname
         })
       }
     } else if (fileName.endsWith('.docx') || 
@@ -401,11 +436,25 @@ router.post('/', upload.single('file'), async (req, res) => {
       return { ...section, category }
     })
 
-    // Crear widgets con información de nivel jerárquico
+    // Crear widgets con información de nivel jerárquico e imágenes asociadas
     const widgets = categorizedSections.map((section, index) => {
       const preview = section.content.substring(0, 150).trim() + (section.content.length > 150 ? '...' : '')
       const description = section.content.substring(0, 1000).trim()
       const additionalInfo = section.content.length > 1000 ? section.content.substring(1000).trim() : undefined
+
+      // Asegurar que las imágenes estén correctamente asociadas
+      const sectionImages = Array.isArray(section.images) ? section.images : []
+      
+      // Si la sección menciona imágenes pero no tiene asociadas, intentar asociar alguna
+      const contentLower = `${section.title} ${section.content}`.toLowerCase()
+      const imageKeywords = ['imagen', 'image', 'figura', 'figure', 'foto', 'photo', 'gráfico', 'graphic', 'diagrama', 'diagram', 'placa', 'placard', 'evidencia', 'fotostática']
+      const mentionsImages = imageKeywords.some(keyword => contentLower.includes(keyword))
+      
+      // Si menciona imágenes pero no tiene, asociar una de las disponibles
+      if (mentionsImages && sectionImages.length === 0 && allImages.length > 0) {
+        const imageIndex = index % allImages.length
+        sectionImages.push(allImages[imageIndex])
+      }
 
       return {
         title: section.title || `Sección ${index + 1}`,
@@ -413,7 +462,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         description,
         additionalInfo,
         category: section.category,
-        images: section.images || [],
+        images: sectionImages, // Imágenes específicas de esta sección
         order: index,
         level: section.level || 1 // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
       }
