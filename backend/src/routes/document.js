@@ -197,20 +197,55 @@ async function extractStructuredContentFromWord(fileBuffer) {
 }
 
 // Función para asociar imágenes a una sección basándose en el contenido
+// PRESERVAR: estructura del contenido, asociar imágenes donde se mencionan
 function associateImagesToSection(section, content, allImages, startIndex, imageKeywords) {
   const sectionImages = []
-  const fullText = `${section.title} ${content.join(' ')}`.toLowerCase()
+  // PRESERVAR: unir contenido manteniendo saltos de línea para análisis
+  const fullText = `${section.title} ${content.join('\n')}`.toLowerCase()
+  
+  // Buscar referencias específicas a imágenes en el texto
+  // Ejemplo: "Ver imagen 1", "Figura 2", "Placard 3", etc.
+  const imageReferences = []
+  imageKeywords.forEach(keyword => {
+    const regex = new RegExp(`\\b${keyword}\\s*(?:\\d+|\\w+)?`, 'gi')
+    const matches = fullText.match(regex)
+    if (matches) {
+      matches.forEach(match => {
+        // Extraer número de imagen si existe
+        const numberMatch = match.match(/\d+/)
+        const imageNumber = numberMatch ? parseInt(numberMatch[0]) : null
+        imageReferences.push({ keyword, imageNumber, match })
+      })
+    }
+  })
   
   // Si el contenido menciona imágenes, asociar las disponibles
-  const hasImageReference = imageKeywords.some(keyword => fullText.includes(keyword.toLowerCase()))
+  const hasImageReference = imageReferences.length > 0 || imageKeywords.some(keyword => fullText.includes(keyword.toLowerCase()))
   
   if (hasImageReference && allImages.length > 0) {
-    // Asociar imágenes basándose en el índice de inicio
-    const numImagesToAssociate = Math.min(2, allImages.length - startIndex) // Máximo 2 imágenes por sección
-    for (let i = 0; i < numImagesToAssociate && (startIndex + i) < allImages.length; i++) {
-      const img = allImages[startIndex + i]
-      if (!sectionImages.includes(img)) {
-        sectionImages.push(img)
+    // Si hay referencias numeradas, intentar asociar por número
+    if (imageReferences.length > 0) {
+      imageReferences.forEach(ref => {
+        if (ref.imageNumber !== null) {
+          const imageIndex = (ref.imageNumber - 1) % allImages.length // Convertir número a índice (1-based a 0-based)
+          if (imageIndex >= 0 && imageIndex < allImages.length) {
+            const img = allImages[imageIndex]
+            if (!sectionImages.includes(img)) {
+              sectionImages.push(img)
+            }
+          }
+        }
+      })
+    }
+    
+    // Si aún no hay imágenes asociadas o hay más referencias, asociar basándose en el índice de inicio
+    if (sectionImages.length === 0) {
+      const numImagesToAssociate = Math.min(2, allImages.length - startIndex) // Máximo 2 imágenes por sección
+      for (let i = 0; i < numImagesToAssociate && (startIndex + i) < allImages.length; i++) {
+        const img = allImages[startIndex + i]
+        if (!sectionImages.includes(img)) {
+          sectionImages.push(img)
+        }
       }
     }
   }
@@ -219,42 +254,46 @@ function associateImagesToSection(section, content, allImages, startIndex, image
 }
 
 // Función inteligente para extraer secciones estructuradas con imágenes asociadas
+// PRESERVA: espacios, saltos de línea, puntuación, estructura completa
 function extractStructuredSections(fullText, images = []) {
+  // Preservar todos los saltos de línea originales
   const allLines = fullText.split(/\r?\n/)
-  const lines = allLines.filter(l => l.trim().length > 0)
   const sections = []
   
   let currentSection = null
-  let currentContent = []
+  let currentContent = [] // Array de líneas originales (sin modificar)
   let currentLevel = 1
   let sectionImageIndex = 0 // Índice para distribuir imágenes
   
   // Palabras clave que indican presencia de imágenes
   const imageKeywords = ['imagen', 'image', 'figura', 'figure', 'foto', 'photo', 'gráfico', 'graphic', 'diagrama', 'diagram', 'placa', 'placard', 'evidencia', 'fotostática', 'evidencias fotostáticas']
   
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
-    const previousLine = i > 0 ? lines[i - 1].trim() : ''
-    const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : ''
+  for (let i = 0; i < allLines.length; i++) {
+    const originalLine = allLines[i] // Línea original sin modificar
+    const line = originalLine.trim() // Solo para análisis, no para guardar
+    const previousLine = i > 0 ? allLines[i - 1].trim() : ''
+    const nextLine = i < allLines.length - 1 ? allLines[i + 1].trim() : ''
     
-    // Detectar si es un título y su nivel
-    const titleLevel = detectTitleLevel(line, previousLine, nextLine, i, lines)
+    // Detectar si es un título y su nivel (usando línea procesada para análisis)
+    const titleLevel = detectTitleLevel(line, previousLine, nextLine, i, allLines)
     
     if (titleLevel !== null) {
       // Guardar sección anterior si existe
       if (currentSection && (currentContent.length > 0 || currentSection.title)) {
         // Asociar imágenes a esta sección antes de guardarla
         const sectionImages = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords)
+        // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
+        const preservedContent = currentContent.join('\n')
         sections.push({
           ...currentSection,
-          content: currentContent.join('\n').trim(),
+          content: preservedContent, // Sin .trim() para preservar espacios
           images: sectionImages,
           level: currentLevel
         })
         sectionImageIndex += sectionImages.length
       }
       
-      // Crear nueva sección
+      // Crear nueva sección - limpiar título pero preservar estructura
       const cleanTitle = line
         .replace(/^##?\s+/, '') // Markdown
         .replace(/^[\d•\-\*IVX\.\)\s]+/, '') // Números/viñetas
@@ -268,10 +307,10 @@ function extractStructuredSections(fullText, images = []) {
         level: titleLevel
       }
       currentLevel = titleLevel
-      currentContent = []
+      currentContent = [] // Reiniciar con array vacío
     } else if (currentSection) {
-      // Agregar contenido a la sección actual
-      currentContent.push(line)
+      // Agregar contenido a la sección actual - PRESERVAR línea original
+      currentContent.push(originalLine) // Guardar línea original completa
       
       // Detectar si esta línea menciona una imagen
       const hasImageReference = imageKeywords.some(keyword => 
@@ -290,37 +329,62 @@ function extractStructuredSections(fullText, images = []) {
       // Si no hay sección actual pero hay contenido, crear una
       currentSection = {
         title: 'Introducción',
-        content: line,
+        content: originalLine, // Preservar línea original
         images: [],
         level: 1
       }
-      currentContent = []
+      currentContent = [originalLine] // Inicializar con la línea original
+    } else if (originalLine.length > 0) {
+      // Líneas que no son títulos pero tienen contenido - agregar a contenido previo o crear sección
+      if (currentSection) {
+        currentContent.push(originalLine) // Preservar línea original
+      } else {
+        // Crear sección para contenido suelto
+        currentSection = {
+          title: 'Introducción',
+          content: '',
+          images: [],
+          level: 1
+        }
+        currentContent = [originalLine] // Preservar línea original
+      }
+    } else {
+      // Línea vacía - PRESERVAR para mantener estructura
+      if (currentSection) {
+        currentContent.push(originalLine) // Preservar línea vacía para mantener saltos de línea
+      }
     }
   }
   
   // Agregar última sección
   if (currentSection) {
     const sectionImages = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords)
+    // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
+    const preservedContent = currentContent.join('\n')
     sections.push({
       ...currentSection,
-      content: currentContent.join('\n').trim(),
+      content: preservedContent, // Sin .trim() para preservar espacios
       images: sectionImages,
       level: currentLevel
     })
   }
   
-  // Si no se detectaron secciones, crear una con todo el contenido
+  // Si no se detectaron secciones, crear una con todo el contenido PRESERVADO
   if (sections.length === 0) {
-    const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
+    // Preservar párrafos completos con sus saltos de línea
+    const paragraphs = fullText.split(/\n\s*\n/)
     sections.push(...paragraphs.map((para, idx) => {
-      const paraImages = images.length > 0 ? [images[idx % images.length]] : []
-      return {
-        title: `Sección ${idx + 1}`,
-        content: para.trim(),
-        images: paraImages,
-        level: 1
+      if (para.trim().length > 0) { // Solo crear sección si tiene contenido
+        const paraImages = images.length > 0 ? [images[idx % images.length]] : []
+        return {
+          title: `Sección ${idx + 1}`,
+          content: para, // PRESERVAR: sin .trim() para mantener espacios y saltos de línea
+          images: paraImages,
+          level: 1
+        }
       }
-    }))
+      return null
+    }).filter(Boolean))
   }
   
   // Distribuir imágenes restantes entre secciones que no tienen imágenes
