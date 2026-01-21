@@ -5,7 +5,7 @@ import VideoBackground from './components/VideoBackground'
 import WidgetGrid from './components/WidgetGrid'
 import InfoModal from './components/InfoModal'
 import Header from './components/Header'
-import { WidgetData, AppContent, WidgetCategory } from './types'
+import { WidgetData, AppContent } from './types'
 
 export default function Home() {
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
@@ -13,7 +13,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState<WidgetCategory | 'all'>('all')
 
   useEffect(() => {
     const checkMobile = () => {
@@ -124,27 +123,12 @@ export default function Home() {
     )
   }
 
-  // Ordenar widgets por order si existe y filtrar por categoría
-  const sortedWidgets = [...content.widgets]
-    .filter(widget => selectedCategory === 'all' || widget.category === selectedCategory)
-    .sort((a, b) => {
-      const orderA = a.order ?? a.id
-      const orderB = b.order ?? b.id
-      return orderA - orderB
-    })
-
-  // Obtener categorías únicas
-  const categories: WidgetCategory[] = ['operaciones', 'economico', 'tecnologico', 'estrategico', 'recursos', 'calidad', 'otro']
-  const categoryLabels: Record<WidgetCategory | 'all', string> = {
-    all: 'Todos',
-    operaciones: 'Operaciones',
-    economico: 'Económico',
-    tecnologico: 'Tecnológico',
-    estrategico: 'Estratégico',
-    recursos: 'Recursos',
-    calidad: 'Calidad',
-    otro: 'Otro',
-  }
+  // Ordenar widgets por order si existe
+  const sortedWidgets = [...content.widgets].sort((a, b) => {
+    const orderA = a.order ?? a.id
+    const orderB = b.order ?? b.id
+    return orderA - orderB
+  })
 
   return (
     <>
@@ -192,64 +176,6 @@ export default function Home() {
           logoSrc={content.settings.logo.src}
           size={content.settings.logo.size}
         />
-        
-        {/* Filtros de categoría */}
-        <div
-          style={{
-            position: 'fixed',
-            top: '100px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 5,
-            display: 'flex',
-            gap: '0.5rem',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            padding: '0.5rem',
-            background: 'rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            maxWidth: '90vw',
-          }}
-        >
-          {(['all', ...categories] as const).map((category) => {
-            const isActive = selectedCategory === category
-            return (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: isActive 
-                    ? 'rgba(102, 126, 234, 0.6)' 
-                    : 'rgba(255, 255, 255, 0.1)',
-                  color: '#ffffff',
-                  border: `1px solid ${isActive ? 'rgba(102, 126, 234, 0.8)' : 'rgba(255, 255, 255, 0.2)'}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: 'clamp(0.75rem, 1.8vw, 0.9rem)',
-                  fontWeight: isActive ? '600' : '400',
-                  transition: 'all 0.3s ease',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                  }
-                }}
-              >
-                {categoryLabels[category]}
-              </button>
-            )
-          })}
-        </div>
-
         <WidgetGrid 
           widgets={sortedWidgets} 
           onWidgetClick={setSelectedWidget}
