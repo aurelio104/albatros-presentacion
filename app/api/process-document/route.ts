@@ -1,24 +1,207 @@
 import { NextRequest, NextResponse } from 'next/server'
 import mammoth from 'mammoth'
+import * as XLSX from 'xlsx'
 import fs from 'fs/promises'
 import path from 'path'
+import { writeFile } from 'fs/promises'
 
-// Simulación de categorización con IA
-// En producción, usarías OpenAI API o similar
-async function categorizeWithAI(text: string, images: string[]): Promise<{
-  category: string
-  widgets: Array<{
-    title: string
-    preview: string
-    description: string
-    additionalInfo?: string
-  }>
+interface ExtractedSection {
+  title: string
+  content: string
+  images: string[]
+  level: number // Nivel del título (1, 2, 3, etc.)
+}
+
+// Extraer contenido estructurado de Word
+async function extractStructuredContentFromWord(fileBuffer: Buffer): Promise<{
+  sections: ExtractedSection[]
+  allImages: string[]
 }> {
-  // Análisis de palabras clave para categorización
+  try {
+    // Extraer HTML para obtener estructura
+    const htmlResult = await mammoth.convertToHtml({ buffer: fileBuffer })
+    const html = htmlResult.value
+    
+    // Extraer imágenes
+    const images: string[] = []
+    const imageMatches = html.match(/<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"/g)
+    if (imageMatches) {
+      for (let i = 0; i < imageMatches.length; i++) {
+        const match = imageMatches[i].match(/data:image\/([^;]+);base64,([^"]+)/)
+        if (match) {
+          const ext = match[1] === 'jpeg' ? 'jpg' : match[1]
+          const base64Data = match[2]
+          const imageBuffer = Buffer.from(base64Data, 'base64')
+          
+          // Guardar imagen
+          const imageDir = path.join(process.cwd(), 'public', 'images')
+          if (!require('fs').existsSync(imageDir)) {
+            require('fs').mkdirSync(imageDir, { recursive: true })
+          }
+          
+          const imageName = `extracted-${Date.now()}-${i}.${ext}`
+          const imagePath = path.join(imageDir, imageName)
+          await writeFile(imagePath, imageBuffer)
+          
+          images.push(`/images/${imageName}`)
+        }
+      }
+    }
+    
+    // Extraer texto estructurado
+    const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
+    const fullText = textResult.value
+    
+    // Detectar títulos y secciones
+    // Los títulos suelen estar en líneas separadas, en mayúsculas, o con números
+    const lines = fullText.split(/\r?\n/).filter(l => l.trim().length > 0)
+    const sections: ExtractedSection[] = []
+    
+    let currentSection: ExtractedSection | null = null
+    let currentContent: string[] = []
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      // Detectar si es un título (línea corta, mayúsculas, o con números/viñetas)
+      const isTitle = (
+        line.length < 100 && // Título corto
+        (
+          /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{2,}$/.test(line) || // Todo mayúsculas
+          /^\d+[\.\)]\s/.test(line) || // Número seguido de punto o paréntesis
+          /^[IVX]+[\.\)]\s/.test(line) || // Números romanos
+          /^[•\-\*]\s/.test(line) || // Viñetas
+          (line.length < 50 && i < lines.length - 1 && lines[i + 1]?.trim().length > 50) // Línea corta seguida de contenido largo
+        )
+      )
+      
+      if (isTitle && currentSection) {
+        // Guardar sección anterior
+        sections.push({
+          ...currentSection,
+          content: currentContent.join('\n').trim()
+        })
+        
+        // Iniciar nueva sección
+        currentSection = {
+          title: line.replace(/^[\d•\-\*IVX\.\)\s]+/, '').trim(), // Limpiar números/viñetas
+          content: '',
+          images: [],
+          level: 1
+        }
+        currentContent = []
+      } else if (isTitle && !currentSection) {
+        // Primera sección
+        currentSection = {
+          title: line.replace(/^[\d•\-\*IVX\.\)\s]+/, '').trim(),
+          content: '',
+          images: [],
+          level: 1
+        }
+        currentContent = []
+      } else if (currentSection) {
+        // Agregar contenido a la sección actual
+        currentContent.push(line)
+      }
+    }
+    
+    // Agregar última sección
+    if (currentSection) {
+      sections.push({
+        ...currentSection,
+        content: currentContent.join('\n').trim()
+      })
+    }
+    
+    // Si no se detectaron secciones, crear una con todo el contenido
+    if (sections.length === 0) {
+      // Dividir por párrafos largos
+      const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
+      sections.push(...paragraphs.map((para, idx) => ({
+        title: `Sección ${idx + 1}`,
+        content: para.trim(),
+        images: [],
+        level: 1
+      })))
+    }
+    
+    // Distribuir imágenes entre secciones
+    images.forEach((img, idx) => {
+      const sectionIndex = Math.floor((idx / images.length) * sections.length)
+      if (sections[sectionIndex]) {
+        sections[sectionIndex].images.push(img)
+      }
+    })
+    
+    return { sections, allImages: images }
+  } catch (error) {
+    console.error('Error extrayendo contenido estructurado:', error)
+    // Fallback: extraer texto simple
+    const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
+    return {
+      sections: [{
+        title: 'Contenido Extraído',
+        content: textResult.value,
+        images: [],
+        level: 1
+      }],
+      allImages: []
+    }
+  }
+}
+
+// Extraer contenido de Excel
+async function extractFromExcel(fileBuffer: Buffer): Promise<ExtractedSection[]> {
+  try {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' })
+    const sections: ExtractedSection[] = []
+    
+    workbook.SheetNames.forEach((sheetName, sheetIdx) => {
+      const worksheet = workbook.Sheets[sheetName]
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' })
+      
+      // Primera fila como título, resto como contenido
+      if (data.length > 0) {
+        const title = String(data[0]?.[0] || `Hoja ${sheetIdx + 1}`).trim()
+        const content = data.slice(1)
+          .map(row => row.filter(cell => cell).join(' | '))
+          .filter(row => row.trim().length > 0)
+          .join('\n')
+        
+        if (content.trim().length > 0) {
+          sections.push({
+            title,
+            content,
+            images: [],
+            level: 1
+          })
+        }
+      }
+    })
+    
+    return sections.length > 0 ? sections : [{
+      title: 'Contenido de Excel',
+      content: 'No se pudo extraer contenido estructurado',
+      images: [],
+      level: 1
+    }]
+  } catch (error) {
+    console.error('Error extrayendo Excel:', error)
+    return [{
+      title: 'Error',
+      content: 'No se pudo procesar el archivo Excel',
+      images: [],
+      level: 1
+    }]
+  }
+}
+
+// Categorizar contenido
+async function categorizeContent(text: string): Promise<string> {
   const keywords = {
     operaciones: ['operación', 'proceso', 'producción', 'manufactura', 'logística', 'cadena', 'suministro', 'operativo'],
-    economico: ['económico', 'financiero', 'costo', 'presupuesto', 'inversión', 'rentabilidad', 'ganancia', 'ahorro', 'presupuesto'],
-    tecnologico: ['tecnología', 'tecnológico', 'digital', 'software', 'sistema', 'plataforma', 'innovación', 'automatización', 'IA', 'inteligencia artificial'],
+    economico: ['económico', 'financiero', 'costo', 'presupuesto', 'inversión', 'rentabilidad', 'ganancia', 'ahorro'],
+    tecnologico: ['tecnología', 'tecnológico', 'digital', 'software', 'sistema', 'plataforma', 'innovación', 'automatización', 'IA'],
     estrategico: ['estrategia', 'plan', 'objetivo', 'meta', 'visión', 'misión', 'dirección', 'liderazgo'],
     recursos: ['recurso', 'humano', 'personal', 'talento', 'equipo', 'organización', 'capacitación'],
     calidad: ['calidad', 'estándar', 'certificación', 'mejora', 'optimización', 'eficiencia', 'excelencia']
@@ -26,7 +209,7 @@ async function categorizeWithAI(text: string, images: string[]): Promise<{
 
   const textLower = text.toLowerCase()
   let maxScore = 0
-  let detectedCategory: string = 'otro'
+  let detectedCategory = 'otro'
 
   for (const [category, words] of Object.entries(keywords)) {
     const score = words.reduce((acc, word) => {
@@ -41,99 +224,96 @@ async function categorizeWithAI(text: string, images: string[]): Promise<{
     }
   }
 
-  // Dividir el texto en secciones para crear widgets
-  const sections = text.split(/\n\s*\n|\r\n\s*\r\n/).filter(s => s.trim().length > 50)
-  
-  const widgets = sections.slice(0, 10).map((section, index) => {
-    const lines = section.split('\n').filter(l => l.trim())
-    const title = lines[0]?.trim().substring(0, 50) || `Sección ${index + 1}`
-    const description = lines.slice(1).join(' ').trim().substring(0, 500) || section.substring(0, 500)
-    const preview = description.substring(0, 100) + (description.length > 100 ? '...' : '')
-
-    return {
-      title,
-      preview,
-      description,
-      additionalInfo: section.length > 500 ? section.substring(500, 1000) : undefined
-    }
-  })
-
-  return {
-    category: detectedCategory,
-    widgets: widgets.length > 0 ? widgets : [{
-      title: 'Contenido Extraído',
-      preview: text.substring(0, 100),
-      description: text.substring(0, 500),
-      additionalInfo: text.length > 500 ? text.substring(500) : undefined
-    }]
-  }
+  return detectedCategory
 }
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const autoCreate = formData.get('autoCreate') === 'true' // Si debe crear widgets automáticamente
 
     if (!file) {
       return NextResponse.json({ error: 'No se proporcionó ningún archivo' }, { status: 400 })
     }
 
     const fileType = file.type
-    const fileName = file.name
+    const fileName = file.name.toLowerCase()
     const fileBuffer = Buffer.from(await file.arrayBuffer())
 
-    let extractedText = ''
-    let extractedImages: string[] = []
+    let sections: ExtractedSection[] = []
+    let allImages: string[] = []
 
     // Procesar según el tipo de archivo
-    if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-        fileName.endsWith('.docx')) {
+    if (fileName.endsWith('.docx') || 
+        fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       // Procesar Word
-      const result = await mammoth.extractRawText({ buffer: fileBuffer })
-      extractedText = result.value
+      const extracted = await extractStructuredContentFromWord(fileBuffer)
+      sections = extracted.sections
+      allImages = extracted.allImages
       
-      // Extraer imágenes si las hay (mammoth puede extraer imágenes con convertToHtml)
-      try {
-        const htmlResult = await mammoth.convertToHtml({ buffer: fileBuffer })
-        // Las imágenes se extraerían del HTML, pero por ahora las dejamos vacías
-        // En producción, se procesarían las imágenes base64 del HTML
-        extractedImages = []
-      } catch (err) {
-        // Si falla la extracción de imágenes, continuamos sin ellas
-        extractedImages = []
-      }
-    } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-               fileName.endsWith('.pptx')) {
-      // Para PowerPoint, necesitamos una librería diferente
-      // Por ahora, extraemos texto básico
-      extractedText = `Presentación: ${fileName}\n\nNota: El procesamiento completo de PowerPoint requiere librerías adicionales. Por favor, exporta el contenido a Word o proporciona el texto manualmente.`
+    } else if (fileName.endsWith('.xlsx') || 
+               fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      // Procesar Excel
+      sections = await extractFromExcel(fileBuffer)
+      
+    } else if (fileName.endsWith('.pptx') ||
+               fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+      // PowerPoint - por ahora mensaje informativo
+      return NextResponse.json({ 
+        error: 'PowerPoint (.pptx) requiere procesamiento adicional. Por favor, exporta el contenido a Word (.docx) o Excel (.xlsx)',
+        suggestion: 'Puedes guardar las diapositivas como imágenes o exportar el texto a Word'
+      }, { status: 400 })
     } else {
       return NextResponse.json({ 
-        error: 'Formato de archivo no soportado. Use .docx o .pptx' 
+        error: 'Formato no soportado. Use .docx, .xlsx o .pptx' 
       }, { status: 400 })
     }
 
-    if (!extractedText || extractedText.trim().length < 10) {
+    if (sections.length === 0) {
       return NextResponse.json({ 
         error: 'No se pudo extraer contenido del documento' 
       }, { status: 400 })
     }
 
-    // Categorizar y organizar con IA
-    const categorized = await categorizeWithAI(extractedText, extractedImages)
+    // Categorizar cada sección
+    const categorizedSections = await Promise.all(
+      sections.map(async (section) => {
+        const category = await categorizeContent(section.title + ' ' + section.content)
+        return { ...section, category }
+      })
+    )
+
+    // Crear widgets
+    const widgets = categorizedSections.map((section, index) => {
+      const preview = section.content.substring(0, 150).trim() + (section.content.length > 150 ? '...' : '')
+      const description = section.content.substring(0, 1000).trim()
+      const additionalInfo = section.content.length > 1000 ? section.content.substring(1000).trim() : undefined
+
+      return {
+        title: section.title || `Sección ${index + 1}`,
+        preview,
+        description,
+        additionalInfo,
+        category: section.category,
+        images: section.images,
+        order: index
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      category: categorized.category,
-      widgets: categorized.widgets,
-      rawText: extractedText.substring(0, 1000), // Primeros 1000 caracteres para preview
-      images: extractedImages
+      widgets,
+      totalSections: sections.length,
+      totalImages: allImages.length,
+      fileName: file.name
     })
 
   } catch (error: any) {
     console.error('Error procesando documento:', error)
     return NextResponse.json({ 
-      error: 'Error al procesar el documento: ' + (error.message || 'Error desconocido') 
+      error: 'Error al procesar el documento: ' + (error.message || 'Error desconocido'),
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 })
   }
 }

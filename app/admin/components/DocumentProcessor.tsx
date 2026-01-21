@@ -64,16 +64,21 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
   const [uploading, setUploading] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [result, setResult] = useState<{
-    category: WidgetCategory
     widgets: Array<{
       title: string
       preview: string
       description: string
       additionalInfo?: string
+      category: WidgetCategory
+      images: string[]
+      order: number
     }>
-    rawText: string
+    totalSections: number
+    totalImages: number
+    fileName: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [autoCreate, setAutoCreate] = useState(true) // Crear widgets automáticamente por defecto
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -83,14 +88,15 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     ]
-    const validExtensions = ['.docx', '.pptx']
+    const validExtensions = ['.docx', '.pptx', '.xlsx']
 
     const isValidType = validTypes.includes(file.type) || 
                        validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
 
     if (!isValidType) {
-      setError('Por favor selecciona un archivo Word (.docx) o PowerPoint (.pptx)')
+      setError('Por favor selecciona un archivo Word (.docx), PowerPoint (.pptx) o Excel (.xlsx)')
       return
     }
 
@@ -107,6 +113,7 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
 
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('autoCreate', autoCreate.toString())
 
     try {
       const response = await fetch('/api/process-document', {
@@ -116,10 +123,41 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
 
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.widgets) {
         setResult(data)
+        
+        // Si autoCreate está activado, crear widgets automáticamente
+        if (autoCreate && data.widgets.length > 0) {
+          const newWidgets: WidgetData[] = data.widgets.map((widget: any, index: number) => ({
+            id: Date.now() + index,
+            title: widget.title,
+            preview: widget.preview,
+            category: widget.category || 'otro',
+            content: {
+              title: widget.title,
+              description: widget.description,
+              images: widget.images || [],
+              additionalInfo: widget.additionalInfo,
+            },
+            animation: {
+              type: 'fadeIn' as const,
+              duration: 0.5,
+              delay: index * 0.1,
+            },
+            style: {
+              backgroundColor: categoryColors[widget.category || 'otro'],
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              textColor: '#ffffff',
+              borderRadius: 16,
+            },
+            order: widget.order ?? index,
+          }))
+          
+          onWidgetsGenerated(newWidgets)
+          setResult(null) // Limpiar resultado después de crear
+        }
       } else {
-        setError(data.error || 'Error al procesar el documento')
+        setError(data.error || data.suggestion || 'Error al procesar el documento')
       }
     } catch (error: any) {
       setError('Error al procesar el documento: ' + (error.message || 'Error desconocido'))
@@ -136,11 +174,11 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
       id: Date.now() + index,
       title: widget.title,
       preview: widget.preview,
-      category: result.category,
+      category: widget.category || 'otro',
       content: {
         title: widget.title,
         description: widget.description,
-        images: [],
+        images: widget.images || [],
         additionalInfo: widget.additionalInfo,
       },
       animation: {
@@ -149,12 +187,12 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
         delay: index * 0.1,
       },
       style: {
-        backgroundColor: categoryColors[result.category],
+        backgroundColor: categoryColors[widget.category || 'otro'],
         borderColor: 'rgba(255, 255, 255, 0.3)',
         textColor: '#ffffff',
         borderRadius: 16,
       },
-      order: index,
+      order: widget.order ?? index,
     }))
 
     onWidgetsGenerated(newWidgets)
@@ -167,10 +205,28 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
       <h2 style={{ marginBottom: '1.5rem', fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)', fontWeight: '600', color: '#ffffff' }}>
         🤖 Procesador Inteligente de Documentos
       </h2>
-      <p style={{ marginBottom: '2rem', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.9rem, 1.8vw, 1rem)' }}>
-        Sube documentos Word o PowerPoint y la IA extraerá automáticamente el contenido, 
-        lo categorizará (operaciones, económico, tecnológico, etc.) y creará widgets organizados.
+      <p style={{ marginBottom: '1rem', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.9rem, 1.8vw, 1rem)' }}>
+        Sube documentos Word, Excel o PowerPoint y la IA analizará completamente el contenido, 
+        detectará títulos y secciones, extraerá imágenes, y creará automáticamente la presentación completa.
       </p>
+      <p style={{ marginBottom: '2rem', color: 'rgba(255, 255, 255, 0.7)', fontSize: 'clamp(0.85rem, 1.5vw, 0.9rem)', fontStyle: 'italic' }}>
+        💡 Cada título o sección se convertirá en un widget con su contenido correspondiente.
+      </p>
+      
+      {/* Opción de creación automática */}
+      <div style={{ marginBottom: '2rem', ...glassmorphismStyle, padding: '1rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', color: '#ffffff' }}>
+          <input
+            type="checkbox"
+            checked={autoCreate}
+            onChange={(e) => setAutoCreate(e.target.checked)}
+            style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+          />
+          <span style={{ fontSize: 'clamp(0.9rem, 1.8vw, 1rem)' }}>
+            ✅ Crear widgets automáticamente después del análisis
+          </span>
+        </label>
+      </div>
 
       <div
         style={{
@@ -250,7 +306,7 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
                 Arrastra un documento aquí o haz clic para seleccionar
               </p>
               <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)' }}>
-                Formatos soportados: Word (.docx) y PowerPoint (.pptx) - Máximo 50MB
+                Formatos: Word (.docx), Excel (.xlsx), PowerPoint (.pptx) - Máximo 50MB
               </p>
             </div>
           )}
@@ -279,62 +335,57 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
         </div>
       )}
 
-      {result && (
+      {result && !autoCreate && (
         <div
           style={{
             ...glassmorphismStyle,
             marginTop: '2rem',
-            border: `2px solid ${categoryColors[result.category]}`,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 'clamp(1.1rem, 2vw, 1.3rem)', fontWeight: '600', color: '#ffffff' }}>
                 📊 Resultados del Procesamiento
               </h3>
               <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.9rem, 1.8vw, 1rem)' }}>
-                Categoría detectada: <strong style={{ color: '#ffffff' }}>{categoryLabels[result.category]}</strong>
+                Archivo: <strong style={{ color: '#ffffff' }}>{result.fileName}</strong>
               </p>
             </div>
-            <div
-              style={{
-                padding: '0.5rem 1rem',
-                background: categoryColors[result.category],
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: '#ffffff',
-                fontWeight: '600',
-              }}
-            >
-              {result.widgets.length} widgets
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(59, 130, 246, 0.3)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  fontWeight: '600',
+                }}
+              >
+                {result.totalSections} secciones
+              </div>
+              {result.totalImages > 0 && (
+                <div
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: 'rgba(34, 197, 94, 0.3)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    color: '#ffffff',
+                    fontWeight: '600',
+                  }}
+                >
+                  {result.totalImages} imágenes
+                </div>
+              )}
             </div>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
             <h4 style={{ marginBottom: '0.5rem', color: '#ffffff', fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>
-              Vista previa del contenido:
+              Widgets detectados ({result.widgets.length}):
             </h4>
-            <div
-              style={{
-                padding: '1rem',
-                background: 'rgba(0, 0, 0, 0.2)',
-                borderRadius: '8px',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: 'clamp(0.85rem, 1.5vw, 0.95rem)',
-                maxHeight: '200px',
-                overflowY: 'auto',
-                lineHeight: '1.6',
-              }}
-            >
-              {result.rawText}...
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ marginBottom: '0.5rem', color: '#ffffff', fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>
-              Widgets generados:
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto' }}>
               {result.widgets.map((widget, index) => (
                 <div
                   key={index}
@@ -342,15 +393,36 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
                     padding: '1rem',
                     background: 'rgba(0, 0, 0, 0.2)',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${categoryColors[widget.category || 'otro']}`,
                   }}
                 >
-                  <div style={{ fontWeight: '600', color: '#ffffff', marginBottom: '0.25rem' }}>
-                    {widget.title}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: '600', color: '#ffffff', fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>
+                      {widget.title}
+                    </div>
+                    {widget.category && (
+                      <div
+                        style={{
+                          padding: '0.25rem 0.75rem',
+                          background: categoryColors[widget.category as WidgetCategory] || categoryColors.otro,
+                          borderRadius: '12px',
+                          fontSize: 'clamp(0.7rem, 1.5vw, 0.8rem)',
+                          color: '#ffffff',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {categoryLabels[widget.category as WidgetCategory] || categoryLabels.otro}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.85rem, 1.5vw, 0.9rem)' }}>
+                  <div style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.85rem, 1.5vw, 0.9rem)', marginBottom: '0.5rem' }}>
                     {widget.preview}
                   </div>
+                  {widget.images && widget.images.length > 0 && (
+                    <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 'clamp(0.75rem, 1.5vw, 0.8rem)' }}>
+                      📷 {widget.images.length} imagen(es)
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
