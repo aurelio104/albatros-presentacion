@@ -201,24 +201,40 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
             color: editedWidget.style?.textColor || '#ffffff',
           }}
         >
-          {/* Badge de categoría */}
-          {editedWidget.category && (
+          {/* Badge de categoría y modo */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            {editedWidget.category && (
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '0.25rem 0.75rem',
+                  background: 'rgba(59, 130, 246, 0.8)',
+                  color: '#ffffff',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {editedWidget.category}
+              </div>
+            )}
             <div
               style={{
                 display: 'inline-block',
                 padding: '0.25rem 0.75rem',
-                background: 'rgba(59, 130, 246, 0.8)',
+                background: editedWidget.displayMode === 'completo' 
+                  ? 'rgba(34, 197, 94, 0.8)' 
+                  : 'rgba(251, 146, 60, 0.8)',
                 color: '#ffffff',
                 borderRadius: '12px',
                 fontSize: '0.8rem',
                 fontWeight: '600',
-                marginBottom: '0.75rem',
-                textTransform: 'uppercase',
               }}
             >
-              {editedWidget.category}
+              {editedWidget.displayMode === 'completo' ? '📋 Completo' : '📄 Resumen'}
             </div>
-          )}
+          </div>
 
           {/* Título */}
           <h2
@@ -400,6 +416,47 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                 fontSize: '1rem',
               }}
             />
+          </div>
+
+          {/* Selector de Modo de Visualización */}
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.5rem', 
+              fontWeight: '500', 
+              color: '#ffffff' 
+            }}>
+              Modo de Visualización
+            </label>
+            <select
+              value={editedWidget.displayMode || 'resumen'}
+              onChange={(e) => handleChange('displayMode', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: '#ffffff',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="resumen">📄 Resumen (muestra preview corto)</option>
+              <option value="completo">📋 Completo (muestra descripción completa)</option>
+            </select>
+            <p style={{ 
+              fontSize: '0.85rem', 
+              color: 'rgba(255, 255, 255, 0.7)', 
+              marginTop: '0.5rem',
+              padding: '0.5rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '6px',
+            }}>
+              {editedWidget.displayMode === 'completo' 
+                ? '✅ El widget mostrará la descripción completa en la tarjeta'
+                : '✅ El widget mostrará solo el preview (texto corto) en la tarjeta'}
+            </p>
           </div>
 
           {/* Editor WYSIWYG para Descripción */}
