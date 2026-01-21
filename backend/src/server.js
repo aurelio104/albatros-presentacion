@@ -26,13 +26,20 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || [
 // CORS configurado de forma segura
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true)
+    // Permitir requests sin origin (mobile apps, Postman, etc.) solo en desarrollo
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true)
+    }
+    
+    if (!origin) {
+      return callback(new Error('Origin requerido'))
+    }
     
     // Verificar si el origin está permitido
     const isAllowed = ALLOWED_ORIGINS.some(allowed => {
+      // Soporte para wildcards en Vercel (albatros-presentacion-*.vercel.app)
       if (allowed.includes('*')) {
-        const pattern = allowed.replace('*', '.*')
+        const pattern = '^' + allowed.replace(/\*/g, '.*') + '$'
         return new RegExp(pattern).test(origin)
       }
       return allowed === origin
@@ -41,12 +48,13 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true)
     } else {
+      console.warn(`CORS bloqueado para origin: ${origin}`)
       callback(new Error('No permitido por CORS'))
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }))
 
 app.use(express.json({ limit: '50mb' }))
