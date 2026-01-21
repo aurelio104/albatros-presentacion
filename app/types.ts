@@ -18,11 +18,21 @@ export interface WidgetStyle {
   borderRadius?: number
 }
 
+export type WidgetCategory = 
+  | 'operaciones' 
+  | 'economico' 
+  | 'tecnologico' 
+  | 'estrategico' 
+  | 'recursos' 
+  | 'calidad' 
+  | 'otro'
+
 export interface WidgetData {
   id: number
   title: string
   preview: string
   content: WidgetContent
+  category?: WidgetCategory
   animation?: WidgetAnimation
   style?: WidgetStyle
   order?: number

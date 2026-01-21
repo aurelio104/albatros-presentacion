@@ -7,6 +7,7 @@ import Header from '@/app/components/Header'
 import WidgetEditor from './WidgetEditor'
 import ImageUploader from './ImageUploader'
 import SettingsEditor from './SettingsEditor'
+import DocumentProcessor from './DocumentProcessor'
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -16,7 +17,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [content, setContent] = useState<AppContent | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images'>('widgets')
+  const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images' | 'documents'>('widgets')
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -128,6 +129,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       ...content,
       settings,
     })
+  }
+
+  const handleWidgetsGenerated = (newWidgets: WidgetData[]) => {
+    if (!content) return
+    setContent({
+      ...content,
+      widgets: [...content.widgets, ...newWidgets],
+    })
+    setMessage({ type: 'success', text: `${newWidgets.length} widgets creados exitosamente` })
+    setTimeout(() => setMessage(null), 3000)
+    setActiveTab('widgets')
   }
 
   if (loading) {
@@ -325,7 +337,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
               border: '1px solid rgba(255, 255, 255, 0.2)',
             }}
           >
-            {(['widgets', 'settings', 'images'] as const).map((tab) => (
+            {(['widgets', 'documents', 'settings', 'images'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -353,6 +365,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 }}
               >
                 {tab === 'widgets' && 'Widgets'}
+                {tab === 'documents' && '🤖 IA Documentos'}
                 {tab === 'settings' && 'Configuración'}
                 {tab === 'images' && 'Imágenes'}
               </button>
@@ -527,6 +540,22 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   settings={content.settings}
                   onUpdate={updateSettings}
                 />
+              </div>
+            )}
+
+            {activeTab === 'documents' && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '2rem',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                }}
+              >
+                <DocumentProcessor onWidgetsGenerated={handleWidgetsGenerated} />
               </div>
             )}
 

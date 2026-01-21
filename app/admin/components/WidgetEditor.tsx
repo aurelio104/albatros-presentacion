@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { WidgetData } from '@/app/types'
+import { WidgetData, WidgetCategory } from '@/app/types'
 import ImageUploader from './ImageUploader'
 
 const inputStyle = {

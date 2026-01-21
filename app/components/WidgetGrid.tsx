@@ -1,11 +1,31 @@
 'use client'
 
-import { WidgetData } from '../types'
+import { WidgetData, WidgetCategory } from '../types'
 import { useEffect, useRef, useState } from 'react'
 
 interface WidgetGridProps {
   widgets: WidgetData[]
   onWidgetClick: (widget: WidgetData) => void
+}
+
+const categoryLabels: Record<WidgetCategory, string> = {
+  operaciones: 'Operaciones',
+  economico: 'Económico',
+  tecnologico: 'Tecnológico',
+  estrategico: 'Estratégico',
+  recursos: 'Recursos',
+  calidad: 'Calidad',
+  otro: 'Otro',
+}
+
+const categoryColors: Record<WidgetCategory, string> = {
+  operaciones: 'rgba(59, 130, 246, 0.8)',
+  economico: 'rgba(34, 197, 94, 0.8)',
+  tecnologico: 'rgba(168, 85, 247, 0.8)',
+  estrategico: 'rgba(251, 146, 60, 0.8)',
+  recursos: 'rgba(236, 72, 153, 0.8)',
+  calidad: 'rgba(14, 165, 233, 0.8)',
+  otro: 'rgba(156, 163, 175, 0.8)',
 }
 
 const getAnimationStyle = (animation: WidgetData['animation'], isVisible: boolean) => {
@@ -87,6 +107,25 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         e.currentTarget.style.background = defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)'
       }}
     >
+      {widget.category && (
+        <div
+          style={{
+            display: 'inline-block',
+            padding: '0.25rem 0.75rem',
+            background: categoryColors[widget.category],
+            color: '#ffffff',
+            borderRadius: '12px',
+            fontSize: 'clamp(0.7rem, 1.8vw, 0.8rem)',
+            fontWeight: '600',
+            marginBottom: '0.75rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            boxShadow: `0 2px 8px ${categoryColors[widget.category]}40`,
+          }}
+        >
+          {categoryLabels[widget.category]}
+        </div>
+      )}
       <h2
         style={{
           color: defaultStyle.textColor || '#ffffff',
