@@ -1,11 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import VideoBackground from './components/VideoBackground'
-import WidgetGrid from './components/WidgetGrid'
-import InfoModal from './components/InfoModal'
 import Header from './components/Header'
 import { WidgetData, AppContent } from './types'
+
+// Lazy load componentes pesados
+const WidgetGrid = dynamic(() => import('./components/WidgetGrid'), {
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Cargando widgets...</div>,
+  ssr: false,
+})
+
+const InfoModal = dynamic(() => import('./components/InfoModal'), {
+  ssr: false,
+})
 
 export default function Home() {
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)

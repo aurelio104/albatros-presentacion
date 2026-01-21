@@ -9,6 +9,7 @@ import { createRequire } from 'module'
 import { PDFDocument } from 'pdf-lib'
 import AdmZip from 'adm-zip'
 import { parseStringPromise } from 'xml2js'
+import logger from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -26,8 +27,8 @@ function getPdfParse() {
   
   try {
     const pdfParseModule = require('pdf-parse')
-    console.log('📦 pdf-parse cargado. Tipo:', typeof pdfParseModule)
-    console.log('🔑 Claves disponibles:', Object.keys(pdfParseModule || {}))
+    logger.debug('📦 pdf-parse cargado. Tipo:', typeof pdfParseModule)
+    logger.debug('🔑 Claves disponibles:', Object.keys(pdfParseModule || {}))
     
     // pdf-parse puede exportarse de diferentes formas dependiendo de la versión
     let pdfParse
@@ -35,12 +36,12 @@ function getPdfParse() {
     // Verificar si es función directa (versiones antiguas)
     if (typeof pdfParseModule === 'function') {
       pdfParse = pdfParseModule
-      console.log('✅ pdfParse asignado como función directa')
+      logger.debug('✅ pdfParse asignado como función directa')
     } 
     // Verificar si tiene .default (ES modules)
     else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
       pdfParse = pdfParseModule.default
-      console.log('✅ pdfParse asignado desde .default')
+      logger.debug('✅ pdfParse asignado desde .default')
     } 
     // Verificar si tiene PDFParse (clase en versiones nuevas)
     else if (pdfParseModule && pdfParseModule.PDFParse && typeof pdfParseModule.PDFParse === 'function') {
@@ -48,17 +49,17 @@ function getPdfParse() {
       // En versiones nuevas, puede tener un método estático o necesitar instanciación
       if (typeof pdfParseModule.PDFParse.parse === 'function') {
         pdfParse = pdfParseModule.PDFParse.parse.bind(pdfParseModule.PDFParse)
-        console.log('✅ pdfParse asignado desde PDFParse.parse (método estático)')
+        logger.debug('✅ pdfParse asignado desde PDFParse.parse (método estático)')
       } else {
         // Intentar usar la clase directamente si tiene un método callable
         pdfParse = pdfParseModule.PDFParse
-        console.log('✅ pdfParse asignado desde PDFParse (clase)')
+        logger.debug('✅ pdfParse asignado desde PDFParse (clase)')
       }
     }
     // Verificar si tiene pdfParse (camelCase)
     else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
       pdfParse = pdfParseModule.pdfParse
-      console.log('✅ pdfParse asignado desde .pdfParse')
+      logger.debug('✅ pdfParse asignado desde .pdfParse')
     }
     // Último intento: buscar cualquier función exportada
     else {
@@ -70,38 +71,38 @@ function getPdfParse() {
       
       if (functionKeys.length > 0) {
         pdfParse = pdfParseModule[functionKeys[0]]
-        console.log(`✅ pdfParse asignado desde .${functionKeys[0]}`)
+        logger.debug(`✅ pdfParse asignado desde .${functionKeys[0]}`)
       } else {
         // Si no encontramos función, intentar usar el módulo completo
         // Algunas versiones de pdf-parse exportan el módulo completo como función
         pdfParse = pdfParseModule
-        console.log('⚠️ pdfParse asignado directamente (puede no ser función)')
+        logger.debug('⚠️ pdfParse asignado directamente (puede no ser función)')
       }
     }
     
-    console.log('📊 pdfParse final. Tipo:', typeof pdfParse)
+    logger.debug('📊 pdfParse final. Tipo:', typeof pdfParse)
     
     // Verificar que sea una función o una clase instanciable
     if (typeof pdfParse !== 'function') {
-      console.error('❌ ERROR: pdfParse no es una función después de procesar')
-      console.error('📦 pdfParseModule completo:', pdfParseModule)
-      console.error('🔑 Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
+      logger.error('❌ ERROR: pdfParse no es una función después de procesar')
+      logger.error('📦 pdfParseModule completo:', pdfParseModule)
+      logger.error('🔑 Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
       
       // Último intento: verificar todas las propiedades del módulo para encontrar la función
-      console.log('🔄 Buscando función en todas las propiedades del módulo...')
+      logger.debug('🔄 Buscando función en todas las propiedades del módulo...')
       const allProps = Object.getOwnPropertyNames(pdfParseModule)
-      console.log('🔍 Todas las propiedades:', allProps)
+      logger.debug('🔍 Todas las propiedades:', allProps)
       
       // Buscar cualquier función que pueda ser la función principal
       for (const prop of allProps) {
         const value = pdfParseModule[prop]
         if (typeof value === 'function' && prop !== 'PDFParse' && !prop.startsWith('_')) {
-          console.log(`🔍 Probando propiedad: ${prop}`)
+          logger.debug(`🔍 Probando propiedad: ${prop}`)
           // Verificar si esta función puede ser la principal
           // La función principal de pdf-parse normalmente acepta un buffer
           try {
             pdfParse = value
-            console.log(`✅ Función encontrada en propiedad: ${prop}`)
+            logger.debug(`✅ Función encontrada en propiedad: ${prop}`)
             break
           } catch (e) {
             // Continuar buscando
@@ -111,8 +112,8 @@ function getPdfParse() {
       
       // Si aún no encontramos función y existe PDFParse, crear wrapper
       if (typeof pdfParse !== 'function' && pdfParseModule && pdfParseModule.PDFParse) {
-        console.log('🔄 Creando wrapper para PDFParse class')
-        console.log('🔍 PDFParse tipo:', typeof pdfParseModule.PDFParse)
+        logger.debug('🔄 Creando wrapper para PDFParse class')
+        logger.debug('🔍 PDFParse tipo:', typeof pdfParseModule.PDFParse)
         
         // Crear wrapper que intente usar PDFParse de diferentes formas
         pdfParse = async (buffer) => {
@@ -125,7 +126,7 @@ function getPdfParse() {
                   return result
                 }
               } catch (e) {
-                console.log('⚠️ PDFParse no es callable directamente, intentando otros métodos...')
+                logger.debug('⚠️ PDFParse no es callable directamente, intentando otros métodos...')
               }
             }
             
@@ -147,11 +148,11 @@ function getPdfParse() {
             
             throw new Error('No se pudo usar PDFParse de ninguna forma conocida')
           } catch (err) {
-            console.error('❌ Error en wrapper PDFParse:', err)
+            logger.error('❌ Error en wrapper PDFParse:', err)
             throw new Error(`Error usando PDFParse: ${err.message}`)
           }
         }
-        console.log('✅ Wrapper creado para PDFParse class')
+        logger.debug('✅ Wrapper creado para PDFParse class')
       } else if (typeof pdfParse !== 'function') {
         // Si el módulo mismo puede ser callable (aunque sea objeto)
         // Algunos módulos CommonJS tienen esta característica
@@ -164,7 +165,7 @@ function getPdfParse() {
             if (typeof moduleExports === 'function' || 
                 (typeof moduleExports === 'object' && typeof moduleExports.call === 'function')) {
               pdfParse = moduleExports
-              console.log('✅ Módulo es callable')
+              logger.debug('✅ Módulo es callable')
             } else {
               throw new Error(`pdf-parse no se importó como función. Tipo: ${typeof pdfParseModule}. Claves: ${Object.keys(pdfParseModule || {}).join(', ')}`)
             }
@@ -176,14 +177,14 @@ function getPdfParse() {
         }
       }
     } else {
-      console.log('✅ pdfParse verificado como función. Listo para usar.')
+      logger.debug('✅ pdfParse verificado como función. Listo para usar.')
     }
     
     pdfParseCache = pdfParse
     return pdfParse
   } catch (error) {
-    console.error('❌ Error cargando pdf-parse:', error)
-    console.error('📚 Stack:', error.stack)
+    logger.error('❌ Error cargando pdf-parse:', error)
+    logger.error('📚 Stack:', error.stack)
     throw new Error(`No se pudo cargar pdf-parse: ${error.message}`)
   }
 }
@@ -263,7 +264,7 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
 // Extraer contenido estructurado de Word con detección inteligente e imágenes
 async function extractStructuredContentFromWord(fileBuffer) {
   try {
-    console.log('📄 Procesando archivo Word...')
+    logger.debug('📄 Procesando archivo Word...')
     
     // Extraer imágenes del archivo Word (método 1: desde HTML de mammoth)
     const htmlResult = await mammoth.convertToHtml({ buffer: fileBuffer })
@@ -301,11 +302,11 @@ async function extractStructuredContentFromWord(fileBuffer) {
     const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
     const fullText = textResult.value // Texto completo preservado (espacios, saltos de línea, puntuación)
     
-    console.log(`✅ Word procesado: ${fullText.length} caracteres, ${allImages.length} imágenes`)
+    logger.debug(`✅ Word procesado: ${fullText.length} caracteres, ${allImages.length} imágenes`)
     
     return extractStructuredSections(fullText, allImages)
   } catch (error) {
-    console.error('Error extrayendo contenido Word:', error)
+    logger.error('Error extrayendo contenido Word:', error)
     try {
       const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
       // Intentar extraer imágenes del ZIP como fallback
@@ -550,7 +551,7 @@ async function extractImagesFromPDF(fileBuffer) {
   await fs.mkdir(imagesDir, { recursive: true })
   
   try {
-    console.log('🖼️  Iniciando extracción de imágenes del PDF...')
+    logger.debug('🖼️  Iniciando extracción de imágenes del PDF...')
     
     // Buscar streams de imágenes en el PDF usando expresiones regulares
     // Los PDFs almacenan imágenes como objetos con /Type /XObject /Subtype /Image
@@ -597,32 +598,32 @@ async function extractImagesFromPDF(fileBuffer) {
           const imageUrl = `${backendUrl}/images/${imageFilename}`
           extractedImages.push(imageUrl)
           
-          console.log(`✅ Imagen extraída: ${imageFilename} (${(imageData.length / 1024).toFixed(2)} KB)`)
+          logger.debug(`✅ Imagen extraída: ${imageFilename} (${(imageData.length / 1024).toFixed(2)} KB)`)
         }
       } catch (imgError) {
-        console.log(`⚠️  Error procesando imagen ${imageIndex + 1}:`, imgError.message)
+        logger.debug(`⚠️  Error procesando imagen ${imageIndex + 1}:`, imgError.message)
         // Continuar con la siguiente imagen
       }
     }
     
     // Si no encontramos imágenes con el método anterior, intentar con pdf-lib
     if (extractedImages.length === 0) {
-      console.log('🔄 Intentando extracción alternativa con pdf-lib...')
+      logger.debug('🔄 Intentando extracción alternativa con pdf-lib...')
       try {
         const pdfDoc = await PDFDocument.load(fileBuffer)
         // pdf-lib no expone fácilmente las imágenes, pero podemos intentar acceder al contexto interno
         // Por ahora, retornamos vacío y confiamos en la asociación por referencias en el texto
-        console.log('⚠️  pdf-lib no puede extraer imágenes directamente. Las imágenes se asociarán por referencias en el texto.')
+        logger.debug('⚠️  pdf-lib no puede extraer imágenes directamente. Las imágenes se asociarán por referencias en el texto.')
       } catch (pdfLibError) {
-        console.log('⚠️  Error con pdf-lib:', pdfLibError.message)
+        logger.debug('⚠️  Error con pdf-lib:', pdfLibError.message)
       }
     }
     
-    console.log(`✅ Total de imágenes extraídas: ${extractedImages.length}`)
+    logger.debug(`✅ Total de imágenes extraídas: ${extractedImages.length}`)
     return extractedImages
   } catch (error) {
-    console.error('❌ Error extrayendo imágenes del PDF:', error.message)
-    console.error('📚 Stack:', error.stack)
+    logger.error('❌ Error extrayendo imágenes del PDF:', error.message)
+    logger.error('📚 Stack:', error.stack)
     return []
   }
 }
@@ -635,20 +636,20 @@ async function extractFromPDF(fileBuffer) {
     
     // Verificar que pdfParse sea una función antes de usarla
     if (typeof pdfParse !== 'function') {
-      console.error('❌ pdfParse no es una función. Tipo:', typeof pdfParse)
-      console.error('📦 pdfParse value:', pdfParse)
+      logger.error('❌ pdfParse no es una función. Tipo:', typeof pdfParse)
+      logger.error('📦 pdfParse value:', pdfParse)
       throw new Error('pdf-parse no está disponible correctamente. Tipo: ' + typeof pdfParse)
     }
     
-    console.log('📄 Llamando a pdfParse con buffer de tamaño:', fileBuffer.length)
-    console.log('🔍 Tipo de pdfParse:', typeof pdfParse)
+    logger.debug('📄 Llamando a pdfParse con buffer de tamaño:', fileBuffer.length)
+    logger.debug('🔍 Tipo de pdfParse:', typeof pdfParse)
     
     // Extraer texto
     const data = await pdfParse(fileBuffer)
     const fullText = data.text
     const numPages = data.numpages || 1
     
-    console.log(`✅ PDF procesado: ${numPages} páginas, ${fullText.length} caracteres`)
+    logger.debug(`✅ PDF procesado: ${numPages} páginas, ${fullText.length} caracteres`)
     
     // Extraer imágenes del PDF
     const extractedImages = await extractImagesFromPDF(fileBuffer)
@@ -661,15 +662,15 @@ async function extractFromPDF(fileBuffer) {
     
     return result
   } catch (error) {
-    console.error('❌ Error extrayendo PDF:', error)
-    console.error('📚 Stack:', error.stack)
-    console.error('🔍 Tipo de pdfParse:', typeof pdfParse)
+    logger.error('❌ Error extrayendo PDF:', error)
+    logger.error('📚 Stack:', error.stack)
+    logger.error('🔍 Tipo de pdfParse:', typeof pdfParse)
     
     // Intentar extraer solo texto como fallback
     try {
       const pdfParse = getPdfParse()
       if (typeof pdfParse === 'function') {
-        console.log('🔄 Intentando fallback con pdfParse...')
+        logger.debug('🔄 Intentando fallback con pdfParse...')
         const data = await pdfParse(fileBuffer)
         const fullText = data.text
         const sections = extractStructuredSections(fullText, [])
@@ -678,7 +679,7 @@ async function extractFromPDF(fileBuffer) {
         throw new Error('pdfParse no es una función en el fallback')
       }
     } catch (fallbackError) {
-      console.error('❌ Error en fallback:', fallbackError)
+      logger.error('❌ Error en fallback:', fallbackError)
       return {
         sections: [{
           title: 'Error',
@@ -728,7 +729,7 @@ async function extractFromExcel(fileBuffer) {
       level: 1
     }]
   } catch (error) {
-    console.error('Error extrayendo Excel:', error)
+    logger.error('Error extrayendo Excel:', error)
     return [{
       title: 'Error',
       content: 'No se pudo procesar el archivo Excel',
@@ -789,11 +790,11 @@ router.post('/', upload.single('file'), async (req, res) => {
     if (fileName.endsWith('.pdf') || 
         fileMimeType === 'application/pdf' ||
         fileMimeType.includes('pdf')) {
-      console.log('Procesando PDF:', fileName, fileMimeType)
+      logger.debug('Procesando PDF:', fileName, fileMimeType)
       try {
-        console.log('Iniciando procesamiento de PDF...')
+        logger.debug('Iniciando procesamiento de PDF...')
         const extracted = await extractFromPDF(fileBuffer)
-        console.log('PDF procesado, estructura:', extracted)
+        logger.debug('PDF procesado, estructura:', extracted)
         
         // Asegurar que extracted tiene la estructura correcta
         if (Array.isArray(extracted)) {
@@ -807,15 +808,15 @@ router.post('/', upload.single('file'), async (req, res) => {
           sections = [extracted]
           allImages = []
         } else {
-          console.error('Estructura inesperada del PDF:', extracted)
+          logger.error('Estructura inesperada del PDF:', extracted)
           sections = []
           allImages = []
         }
         
-        console.log(`Secciones extraídas: ${sections.length}, Imágenes: ${allImages.length}`)
+        logger.debug(`Secciones extraídas: ${sections.length}, Imágenes: ${allImages.length}`)
       } catch (pdfError) {
-        console.error('Error específico procesando PDF:', pdfError)
-        console.error('Stack:', pdfError.stack)
+        logger.error('Error específico procesando PDF:', pdfError)
+        logger.error('Stack:', pdfError.stack)
         return res.status(400).json({
           error: 'Error al procesar el archivo PDF',
           details: pdfError.message || 'Error desconocido',
@@ -830,18 +831,18 @@ router.post('/', upload.single('file'), async (req, res) => {
       allImages = extracted.allImages
     } else if (fileName.endsWith('.xlsx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      console.log('Procesando Excel:', fileName, fileMimeType)
+      logger.debug('Procesando Excel:', fileName, fileMimeType)
       const extracted = await extractFromExcel(fileBuffer)
       sections = extracted.sections
       allImages = extracted.allImages || []
     } else if (fileName.endsWith('.pptx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-      console.log('Procesando PowerPoint:', fileName, fileMimeType)
+      logger.debug('Procesando PowerPoint:', fileName, fileMimeType)
       const extracted = await extractFromPowerPoint(fileBuffer)
       sections = extracted.sections
       allImages = extracted.allImages || []
     } else {
-      console.error('Formato no reconocido:', {
+      logger.error('Formato no reconocido:', {
         fileName,
         mimeType: fileMimeType,
         originalName: req.file.originalname
@@ -925,7 +926,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Error procesando documento:', error)
+    logger.error('Error procesando documento:', error)
     res.status(500).json({
       error: 'Error al procesar el documento',
       details: error.message || 'Error desconocido'

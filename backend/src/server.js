@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url'
 import contentRoutes from './routes/content.js'
 import uploadRoutes from './routes/upload.js'
 import documentRoutes from './routes/document.js'
+import { rateLimiter } from './middleware/rateLimiter.js'
+import logger from './utils/logger.js'
 
 dotenv.config()
 
@@ -48,7 +50,7 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true)
     } else {
-      console.warn(`CORS bloqueado para origin: ${origin}`)
+      logger.warn(`CORS bloqueado para origin: ${origin}`)
       callback(new Error('No permitido por CORS'))
     }
   },
@@ -60,6 +62,9 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
+// Rate limiting para APIs
+app.use('/api', rateLimiter)
+
 // Crear directorios necesarios
 const dataDir = path.join(__dirname, '..', 'data')
 const imagesDir = path.join(__dirname, '..', 'public', 'images')
@@ -68,9 +73,9 @@ async function ensureDirectories() {
   try {
     await fs.mkdir(dataDir, { recursive: true })
     await fs.mkdir(imagesDir, { recursive: true })
-    console.log('✅ Directorios creados/verificados')
+    logger.info('✅ Directorios creados/verificados')
   } catch (error) {
-    console.error('Error creando directorios:', error)
+    logger.error('Error creando directorios:', error)
   }
 }
 
@@ -96,9 +101,9 @@ async function startServer() {
   await ensureDirectories()
   
   app.listen(PORT, () => {
-    console.log(`🚀 Servidor backend ejecutándose en puerto ${PORT}`)
-    console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`)
-    console.log(`🔒 CORS permitido para: ${ALLOWED_ORIGINS.join(', ')}`)
+    logger.info(`🚀 Servidor backend ejecutándose en puerto ${PORT}`)
+    logger.info(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`)
+    logger.info(`🔒 CORS permitido para: ${ALLOWED_ORIGINS.join(', ')}`)
   })
 }
 

@@ -1,7 +1,8 @@
 'use client'
 
 import { WidgetData, WidgetCategory } from '../types'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo, memo } from 'react'
+import dynamic from 'next/dynamic'
 
 interface WidgetGridProps {
   widgets: WidgetData[]

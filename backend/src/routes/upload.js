@@ -3,6 +3,7 @@ import multer from 'multer'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import logger from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -61,7 +62,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       type: req.file.mimetype
     })
   } catch (error) {
-    console.error('Error al subir archivo:', error)
+    logger.error('Error al subir archivo:', error)
     res.status(500).json({
       error: 'Error al subir el archivo',
       details: error.message || 'Error desconocido'

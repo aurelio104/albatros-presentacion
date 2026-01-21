@@ -2,6 +2,7 @@ import express from 'express'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import logger from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -50,7 +51,7 @@ router.get('/', async (req, res) => {
 
     res.json(content)
   } catch (error) {
-    console.error('Error al leer el contenido:', error)
+    logger.error('Error al leer el contenido:', error)
     // En caso de error, retornar contenido por defecto
     res.json(getDefaultContent())
   }
@@ -80,7 +81,7 @@ router.post('/', async (req, res) => {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Error al guardar el contenido:', error)
+    logger.error('Error al guardar el contenido:', error)
     res.status(500).json({
       error: 'Error al guardar el contenido',
       details: error.message || 'Error desconocido'
