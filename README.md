@@ -85,16 +85,19 @@ const widgets: WidgetData[] = [
 ]
 ```
 
-## Despliegue en Vercel
+## Despliegue
 
-Consulta el archivo `VERCEL_DEPLOY.md` para instrucciones detalladas.
-
-### Resumen Rápido:
+### Frontend (Vercel)
 
 1. Crea un repositorio en GitHub
 2. Conecta el repositorio a Vercel
 3. Vercel detectará automáticamente Next.js
 4. Los cambios se desplegarán automáticamente en cada push
+5. Configura la variable de entorno `NEXT_PUBLIC_BACKEND_URL` con la URL de tu backend
+
+### Backend (Koyeb)
+
+Consulta `KOYEB_DEPLOY.md` para instrucciones detalladas de despliegue del backend en Koyeb.
 
 ## Personalización
 
