@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import VideoBackground from './components/VideoBackground'
 import WidgetGrid from './components/WidgetGrid'
 import InfoModal from './components/InfoModal'
-import LogoCenter from './components/LogoCenter'
+import Header from './components/Header'
 import { WidgetData, AppContent } from './types'
 
 export default function Home() {
@@ -172,9 +172,8 @@ export default function Home() {
           videoSrc={content.settings.videoBackground} 
           overlay={content.settings.overlay} 
         />
-        <LogoCenter 
+        <Header 
           logoSrc={content.settings.logo.src}
-          position={content.settings.logo.position}
           size={content.settings.logo.size}
         />
         <WidgetGrid 

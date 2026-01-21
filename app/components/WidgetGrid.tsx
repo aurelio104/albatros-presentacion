@@ -140,6 +140,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           align-items: center;
           gap: 2rem;
           padding: 2rem;
+          padding-top: 120px;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
         }
@@ -177,7 +178,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Tablets */
         @media (max-width: 768px) {
           .widget-grid {
-            padding-top: 200px;
+            padding-top: 100px;
             align-items: flex-start;
             padding-bottom: 2rem;
             gap: 1.5rem;
@@ -205,7 +206,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Mobile */
         @media (max-width: 480px) {
           .widget-grid {
-            padding-top: 160px;
+            padding-top: 90px;
             gap: 1rem;
             padding-left: 1rem;
             padding-right: 1rem;
@@ -220,7 +221,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Very small mobile */
         @media (max-width: 360px) {
           .widget-grid {
-            padding-top: 140px;
+            padding-top: 80px;
             gap: 0.75rem;
             padding-left: 0.75rem;
             padding-right: 0.75rem;
@@ -230,7 +231,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Landscape mobile */
         @media (max-height: 500px) and (orientation: landscape) {
           .widget-grid {
-            padding-top: 120px;
+            padding-top: 70px;
             align-items: flex-start;
             padding-bottom: 1rem;
           }
