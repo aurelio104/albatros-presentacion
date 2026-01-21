@@ -145,7 +145,7 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
               delay: index * 0.1,
             },
             style: {
-              backgroundColor: categoryColors[widget.category || 'otro'],
+              backgroundColor: categoryColors[(widget.category || 'otro') as WidgetCategory],
               borderColor: 'rgba(255, 255, 255, 0.3)',
               textColor: '#ffffff',
               borderRadius: 16,
