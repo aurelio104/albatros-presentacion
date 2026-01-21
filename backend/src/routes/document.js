@@ -836,13 +836,16 @@ router.post('/', upload.single('file'), async (req, res) => {
       allImages = extracted.allImages
     } else if (fileName.endsWith('.xlsx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
-      sections = await extractFromExcel(fileBuffer)
+      console.log('Procesando Excel:', fileName, fileMimeType)
+      const extracted = await extractFromExcel(fileBuffer)
+      sections = extracted.sections
+      allImages = extracted.allImages || []
     } else if (fileName.endsWith('.pptx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-      return res.status(400).json({
-        error: 'PowerPoint (.pptx) requiere procesamiento adicional',
-        suggestion: 'Exporta el contenido a Word (.docx) o Excel (.xlsx)'
-      })
+      console.log('Procesando PowerPoint:', fileName, fileMimeType)
+      const extracted = await extractFromPowerPoint(fileBuffer)
+      sections = extracted.sections
+      allImages = extracted.allImages || []
     } else {
       console.error('Formato no reconocido:', {
         fileName,
