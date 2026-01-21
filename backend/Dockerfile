@@ -6,7 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar dependencias (incluyendo pdf-parse)
-RUN npm install --production && npm list pdf-parse
+RUN npm install --production && \
+    npm list pdf-parse && \
+    node -e "const { createRequire } = require('module'); const require2 = createRequire(require.resolve('./package.json')); const pdf = require2('pdf-parse'); console.log('pdf-parse test:', typeof pdf, typeof pdf === 'function')"
 
 # Copiar código fuente
 COPY . .

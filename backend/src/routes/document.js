@@ -13,53 +13,65 @@ const __dirname = path.dirname(__filename)
 // pdf-parse es CommonJS, necesitamos usar createRequire
 const require = createRequire(import.meta.url)
 
-// Importar pdf-parse de forma segura
-let pdfParse
-try {
-  const pdfParseModule = require('pdf-parse')
-  console.log('📦 pdf-parse cargado. Tipo:', typeof pdfParseModule)
-  console.log('📦 pdf-parse es función directa:', typeof pdfParseModule === 'function')
-  
-  // pdf-parse puede exportarse de diferentes formas dependiendo de la versión
-  if (typeof pdfParseModule === 'function') {
-    pdfParse = pdfParseModule
-    console.log('✅ pdfParse asignado como función directa')
-  } else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
-    pdfParse = pdfParseModule.default
-    console.log('✅ pdfParse asignado desde .default')
-  } else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
-    pdfParse = pdfParseModule.pdfParse
-    console.log('✅ pdfParse asignado desde .pdfParse')
-  } else {
-    // Último intento: usar el módulo directamente
-    pdfParse = pdfParseModule
-    console.log('⚠️ pdfParse asignado directamente (puede no ser función)')
+// Importar pdf-parse de forma segura - función lazy para evitar errores al iniciar
+let pdfParseCache = null
+
+function getPdfParse() {
+  if (pdfParseCache !== null) {
+    return pdfParseCache
   }
   
-  console.log('📊 pdfParse final. Tipo:', typeof pdfParse)
-  
-  if (typeof pdfParse !== 'function') {
-    console.error('❌ ERROR: pdfParse no es una función después de procesar')
-    console.error('📦 pdfParseModule completo:', pdfParseModule)
-    console.error('🔑 Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
-    console.error('📋 Tipo de pdfParseModule:', typeof pdfParseModule)
+  try {
+    const pdfParseModule = require('pdf-parse')
+    console.log('📦 pdf-parse cargado. Tipo:', typeof pdfParseModule)
+    console.log('📦 pdf-parse es función directa:', typeof pdfParseModule === 'function')
     
-    // Intentar una última vez con diferentes formas
-    if (pdfParseModule && pdfParseModule.constructor && pdfParseModule.constructor.name === 'Function') {
+    // pdf-parse puede exportarse de diferentes formas dependiendo de la versión
+    let pdfParse
+    
+    if (typeof pdfParseModule === 'function') {
       pdfParse = pdfParseModule
-      console.log('🔄 Reintentando con constructor')
+      console.log('✅ pdfParse asignado como función directa')
+    } else if (pdfParseModule && typeof pdfParseModule.default === 'function') {
+      pdfParse = pdfParseModule.default
+      console.log('✅ pdfParse asignado desde .default')
+    } else if (pdfParseModule && typeof pdfParseModule.pdfParse === 'function') {
+      pdfParse = pdfParseModule.pdfParse
+      console.log('✅ pdfParse asignado desde .pdfParse')
+    } else {
+      // Último intento: usar el módulo directamente
+      pdfParse = pdfParseModule
+      console.log('⚠️ pdfParse asignado directamente (puede no ser función)')
     }
+    
+    console.log('📊 pdfParse final. Tipo:', typeof pdfParse)
     
     if (typeof pdfParse !== 'function') {
-      throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}`)
+      console.error('❌ ERROR: pdfParse no es una función después de procesar')
+      console.error('📦 pdfParseModule completo:', pdfParseModule)
+      console.error('🔑 Claves de pdfParseModule:', Object.keys(pdfParseModule || {}))
+      console.error('📋 Tipo de pdfParseModule:', typeof pdfParseModule)
+      
+      // Intentar una última vez con diferentes formas
+      if (pdfParseModule && pdfParseModule.constructor && pdfParseModule.constructor.name === 'Function') {
+        pdfParse = pdfParseModule
+        console.log('🔄 Reintentando con constructor')
+      }
+      
+      if (typeof pdfParse !== 'function') {
+        throw new Error(`pdf-parse no se importó como función. Tipo recibido: ${typeof pdfParseModule}`)
+      }
+    } else {
+      console.log('✅ pdfParse verificado como función. Listo para usar.')
     }
-  } else {
-    console.log('✅ pdfParse verificado como función. Listo para usar.')
+    
+    pdfParseCache = pdfParse
+    return pdfParse
+  } catch (error) {
+    console.error('❌ Error cargando pdf-parse:', error)
+    console.error('📚 Stack:', error.stack)
+    throw new Error(`No se pudo cargar pdf-parse: ${error.message}`)
   }
-} catch (error) {
-  console.error('❌ Error cargando pdf-parse:', error)
-  console.error('📚 Stack:', error.stack)
-  throw new Error(`No se pudo cargar pdf-parse: ${error.message}`)
 }
 
 const router = express.Router()
@@ -332,6 +344,9 @@ function extractStructuredSections(fullText, images = []) {
 // Extraer contenido de PDF con detección inteligente e imágenes
 async function extractFromPDF(fileBuffer) {
   try {
+    // Obtener pdfParse de forma lazy
+    const pdfParse = getPdfParse()
+    
     // Verificar que pdfParse sea una función antes de usarla
     if (typeof pdfParse !== 'function') {
       console.error('❌ pdfParse no es una función. Tipo:', typeof pdfParse)
@@ -363,6 +378,7 @@ async function extractFromPDF(fileBuffer) {
     
     // Intentar extraer solo texto como fallback
     try {
+      const pdfParse = getPdfParse()
       if (typeof pdfParse === 'function') {
         console.log('🔄 Intentando fallback con pdfParse...')
         const data = await pdfParse(fileBuffer)
