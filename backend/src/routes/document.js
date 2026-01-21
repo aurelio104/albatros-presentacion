@@ -523,7 +523,8 @@ function extractStructuredSections(fullText, images = []) {
   return { sections, allImages: images }
 }
 
-// Extraer imágenes del PDF usando pdf-lib
+// Extraer imágenes del PDF usando análisis directo del buffer
+// pdf-lib no expone fácilmente las imágenes, así que usamos un enfoque de parsing directo
 async function extractImagesFromPDF(fileBuffer) {
   const extractedImages = []
   const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
@@ -532,71 +533,69 @@ async function extractImagesFromPDF(fileBuffer) {
   try {
     console.log('🖼️  Iniciando extracción de imágenes del PDF...')
     
-    // Cargar el documento PDF
-    const pdfDoc = await PDFDocument.load(fileBuffer)
-    const pages = pdfDoc.getPages()
+    // Buscar streams de imágenes en el PDF usando expresiones regulares
+    // Los PDFs almacenan imágenes como objetos con /Type /XObject /Subtype /Image
+    const pdfString = fileBuffer.toString('binary')
     
-    console.log(`📄 PDF tiene ${pages.length} páginas`)
-    
-    // Obtener todas las imágenes embebidas en el PDF
-    const imageRefs = pdfDoc.context.enumerateIndirectObjects()
+    // Buscar patrones de objetos de imagen
+    // Formato: /Type /XObject /Subtype /Image ... stream ... endstream
+    const imageStreamRegex = /\/Type\s*\/XObject[\s\S]*?\/Subtype\s*\/Image[\s\S]*?stream\s*([\s\S]*?)\s*endstream/gi
+    let match
     let imageIndex = 0
     
-    for (const [ref, object] of imageRefs) {
+    while ((match = imageStreamRegex.exec(pdfString)) !== null) {
       try {
-        // Verificar si es un objeto de imagen (XObject con Subtype = Image)
-        if (object && object.dict && object.dict.get('Subtype')?.name === 'Image') {
-          const imageDict = object.dict
-          const width = imageDict.get('Width')
-          const height = imageDict.get('Height')
-          const filter = imageDict.get('Filter')
+        const streamData = match[1]
+        
+        // Limpiar el stream (puede tener filtros de compresión)
+        // Intentar extraer datos binarios
+        let imageData = streamData
+        
+        // Si el stream está en formato hexadecimal, convertir
+        if (/^[\s0-9a-fA-F]+$/.test(streamData.trim())) {
+          const hexString = streamData.replace(/\s/g, '')
+          imageData = Buffer.from(hexString, 'hex')
+        } else {
+          // Intentar como binario directo
+          imageData = Buffer.from(streamData, 'binary')
+        }
+        
+        // Verificar que sea una imagen válida (JPEG o PNG)
+        const isJPEG = imageData[0] === 0xFF && imageData[1] === 0xD8
+        const isPNG = imageData[0] === 0x89 && imageData[1] === 0x50 && imageData[2] === 0x4E && imageData[3] === 0x47
+        
+        if (isJPEG || isPNG) {
+          const extension = isJPEG ? 'jpg' : 'png'
+          const timestamp = Date.now()
+          imageIndex++
+          const imageFilename = `pdf-${timestamp}-img${imageIndex}.${extension}`
+          const imagePath = path.join(imagesDir, imageFilename)
           
-          // Obtener los datos de la imagen
-          const imageData = object.dict.get('stream')?.getBytes() || 
-                           object.dict.get('stream')?.content || 
-                           object.dict.get('stream')
+          await fs.writeFile(imagePath, imageData)
           
-          if (imageData && width && height) {
-            // Determinar el formato basado en el filtro
-            let extension = 'png'
-            let mimeType = 'image/png'
-            
-            if (filter) {
-              const filterName = Array.isArray(filter) ? filter[0]?.name : filter?.name
-              if (filterName === 'DCTDecode' || filterName === 'JPXDecode') {
-                extension = 'jpg'
-                mimeType = 'image/jpeg'
-              }
-            }
-            
-            // Convertir a Buffer si es necesario
-            let imageBuffer = imageData
-            if (imageData instanceof Uint8Array) {
-              imageBuffer = Buffer.from(imageData)
-            } else if (typeof imageData === 'string') {
-              imageBuffer = Buffer.from(imageData, 'base64')
-            }
-            
-            // Guardar la imagen
-            const timestamp = Date.now()
-            imageIndex++
-            const imageFilename = `pdf-${timestamp}-img${imageIndex}.${extension}`
-            const imagePath = path.join(imagesDir, imageFilename)
-            
-            await fs.writeFile(imagePath, imageBuffer)
-            
-            // URL relativa para el frontend (el backend sirve en /images/)
-            // En producción, usar la URL del backend de Koyeb
-            const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
-            const imageUrl = `${backendUrl}/images/${imageFilename}`
-            extractedImages.push(imageUrl)
-            
-            console.log(`✅ Imagen extraída: ${imageFilename} (${width}x${height}, ${(imageBuffer.length / 1024).toFixed(2)} KB)`)
-          }
+          // URL para el frontend
+          const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+          const imageUrl = `${backendUrl}/images/${imageFilename}`
+          extractedImages.push(imageUrl)
+          
+          console.log(`✅ Imagen extraída: ${imageFilename} (${(imageData.length / 1024).toFixed(2)} KB)`)
         }
       } catch (imgError) {
-        console.log(`⚠️  Error procesando objeto de imagen ${ref}:`, imgError.message)
+        console.log(`⚠️  Error procesando imagen ${imageIndex + 1}:`, imgError.message)
         // Continuar con la siguiente imagen
+      }
+    }
+    
+    // Si no encontramos imágenes con el método anterior, intentar con pdf-lib
+    if (extractedImages.length === 0) {
+      console.log('🔄 Intentando extracción alternativa con pdf-lib...')
+      try {
+        const pdfDoc = await PDFDocument.load(fileBuffer)
+        // pdf-lib no expone fácilmente las imágenes, pero podemos intentar acceder al contexto interno
+        // Por ahora, retornamos vacío y confiamos en la asociación por referencias en el texto
+        console.log('⚠️  pdf-lib no puede extraer imágenes directamente. Las imágenes se asociarán por referencias en el texto.')
+      } catch (pdfLibError) {
+        console.log('⚠️  Error con pdf-lib:', pdfLibError.message)
       }
     }
     
