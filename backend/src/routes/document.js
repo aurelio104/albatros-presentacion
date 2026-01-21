@@ -294,7 +294,7 @@ async function extractStructuredContentFromWord(fileBuffer) {
     }
     
     // Método 2: Extraer imágenes directamente del ZIP (más confiable)
-    const zipImages = await extractImagesFromOfficeFile(fileBuffer, 'docx')
+    const zipImages = await extractImagesFromDocx(fileBuffer)
     // Combinar ambas listas, eliminando duplicados
     const allImages = [...new Set([...images, ...zipImages])]
     
@@ -310,7 +310,7 @@ async function extractStructuredContentFromWord(fileBuffer) {
     try {
       const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
       // Intentar extraer imágenes del ZIP como fallback
-      const zipImages = await extractImagesFromOfficeFile(fileBuffer, 'docx')
+      const zipImages = await extractImagesFromDocx(fileBuffer)
       return {
         sections: [{
           title: 'Contenido Extraído',
@@ -838,7 +838,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     } else if (fileName.endsWith('.pptx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
       logger.debug('Procesando PowerPoint:', fileName, fileMimeType)
-      const extracted = await extractFromPowerPoint(fileBuffer)
+      const extracted = await extractFromPptx(fileBuffer)
       sections = extracted.sections
       allImages = extracted.allImages || []
     } else {
