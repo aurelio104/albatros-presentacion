@@ -340,9 +340,27 @@ router.post('/', upload.single('file'), async (req, res) => {
         fileMimeType === 'application/pdf' ||
         fileMimeType.includes('pdf')) {
       console.log('Procesando PDF:', fileName, fileMimeType)
-      const extracted = await extractFromPDF(fileBuffer)
-      sections = extracted.sections || extracted
-      allImages = extracted.allImages || []
+      try {
+        const extracted = await extractFromPDF(fileBuffer)
+        // Asegurar que extracted tiene la estructura correcta
+        if (Array.isArray(extracted)) {
+          sections = extracted
+          allImages = []
+        } else if (extracted.sections) {
+          sections = extracted.sections
+          allImages = extracted.allImages || []
+        } else {
+          sections = [extracted]
+          allImages = []
+        }
+      } catch (pdfError) {
+        console.error('Error específico procesando PDF:', pdfError)
+        return res.status(400).json({
+          error: 'Error al procesar el archivo PDF',
+          details: pdfError.message || 'Error desconocido',
+          hint: 'Asegúrate de que el PDF contenga texto (no sea solo imágenes escaneadas)'
+        })
+      }
     } else if (fileName.endsWith('.docx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       const extracted = await extractStructuredContentFromWord(fileBuffer)
