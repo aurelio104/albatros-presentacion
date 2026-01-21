@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 import { writeFile } from 'fs/promises'
 import path from 'path'
 import { existsSync, mkdirSync } from 'fs'
@@ -41,18 +42,64 @@ export async function POST(request: NextRequest) {
     const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
     const fileName = `${timestamp}-${originalName}`
 
-    // Asegurar que el directorio existe
-    const uploadDir = path.join(process.cwd(), 'public', 'images')
-    if (!existsSync(uploadDir)) {
-      mkdirSync(uploadDir, { recursive: true })
+    let fileUrl = ''
+
+    // Intentar usar Vercel Blob Storage primero (producción)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blob = await put(fileName, buffer, {
+          access: 'public',
+          contentType: file.type,
+        })
+        fileUrl = blob.url
+      } catch (blobError: any) {
+        console.error('Error subiendo a Blob Storage:', blobError)
+        // Continuar con método alternativo
+      }
     }
 
-    // Guardar archivo
-    const filePath = path.join(uploadDir, fileName)
-    await writeFile(filePath, buffer)
+    // Si Blob Storage no está disponible, intentar guardar localmente (solo desarrollo)
+    if (!fileUrl && process.env.NODE_ENV === 'development' && !process.env.VERCEL) {
+      try {
+        const uploadDir = path.join(process.cwd(), 'public', 'images')
+        if (!existsSync(uploadDir)) {
+          mkdirSync(uploadDir, { recursive: true })
+        }
 
-    // Retornar URL relativa
-    const fileUrl = `/images/${fileName}`
+        const filePath = path.join(uploadDir, fileName)
+        await writeFile(filePath, buffer)
+
+        fileUrl = `/images/${fileName}`
+      } catch (fileError: any) {
+        console.error('Error guardando archivo localmente:', fileError)
+        // Si falla, retornar error
+        if (fileError.code === 'EROFS') {
+          return NextResponse.json(
+            { 
+              error: 'No se puede guardar archivos en el sistema de archivos',
+              details: 'El sistema de archivos es de solo lectura en producción',
+              solution: 'Configura Vercel Blob Storage. Ve a Vercel Dashboard > Storage > Create Database > Blob',
+              hint: 'O configura las variables de entorno BLOB_READ_WRITE_TOKEN'
+            },
+            { status: 500 }
+          )
+        }
+        throw fileError
+      }
+    }
+
+    // Si no se pudo guardar en ningún lado
+    if (!fileUrl) {
+      return NextResponse.json(
+        { 
+          error: 'No se pudo guardar la imagen',
+          details: 'Necesitas configurar Vercel Blob Storage para subir imágenes en producción',
+          solution: 'Ve a Vercel Dashboard > Storage > Create Database > Blob',
+          hint: 'Consulta la documentación de Vercel Blob Storage'
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,

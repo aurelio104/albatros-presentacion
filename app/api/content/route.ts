@@ -115,8 +115,9 @@ export async function POST(request: NextRequest) {
     // Intentar guardar en KV primero (producción)
     saved = await writeToKV(body)
 
-    // Si KV no está disponible, intentar guardar en archivo (solo desarrollo)
-    if (!saved && process.env.NODE_ENV === 'development') {
+    // Si KV no está disponible, intentar guardar en archivo (SOLO en desarrollo local, NO en Vercel)
+    // En Vercel, el sistema de archivos es de solo lectura, así que solo intentamos en desarrollo real
+    if (!saved && process.env.NODE_ENV === 'development' && !process.env.VERCEL) {
       try {
         const dataDir = path.dirname(CONTENT_FILE)
         if (!fs.existsSync(dataDir)) {
@@ -126,6 +127,10 @@ export async function POST(request: NextRequest) {
         saved = true
       } catch (fileError: any) {
         console.error('Error guardando en archivo:', fileError)
+        // No intentar guardar en archivo si estamos en Vercel
+        if (fileError.code === 'EROFS') {
+          console.log('Sistema de archivos de solo lectura detectado (Vercel)')
+        }
       }
     }
 
