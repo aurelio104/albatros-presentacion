@@ -89,14 +89,15 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/pdf',
     ]
-    const validExtensions = ['.docx', '.pptx', '.xlsx']
+    const validExtensions = ['.docx', '.pptx', '.xlsx', '.pdf']
 
     const isValidType = validTypes.includes(file.type) || 
                        validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
 
     if (!isValidType) {
-      setError('Por favor selecciona un archivo Word (.docx), PowerPoint (.pptx) o Excel (.xlsx)')
+      setError('Por favor selecciona un archivo Word (.docx), PowerPoint (.pptx), Excel (.xlsx) o PDF (.pdf)')
       return
     }
 
@@ -306,9 +307,9 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
               <p style={{ margin: 0, color: '#ffffff', fontSize: 'clamp(1rem, 2vw, 1.1rem)', fontWeight: '600' }}>
                 Arrastra un documento aquí o haz clic para seleccionar
               </p>
-              <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)' }}>
-                Formatos: Word (.docx), Excel (.xlsx), PowerPoint (.pptx) - Máximo 50MB
-              </p>
+                  <p style={{ margin: '0.5rem 0 0 0', color: 'rgba(255, 255, 255, 0.8)', fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)' }}>
+                    Formatos: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf) - Máximo 50MB
+                  </p>
             </div>
           )}
         </label>

@@ -2,6 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
+import pdfParse from 'pdf-parse'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -150,6 +151,98 @@ async function extractStructuredContentFromWord(fileBuffer) {
   }
 }
 
+// Extraer contenido de PDF
+async function extractFromPDF(fileBuffer) {
+  try {
+    const data = await pdfParse(fileBuffer)
+    const fullText = data.text
+    
+    // Detectar secciones basándose en títulos en mayúsculas o con formato especial
+    const lines = fullText.split(/\r?\n/).filter(l => l.trim().length > 0)
+    const sections = []
+    
+    let currentSection = null
+    let currentContent = []
+    
+    // Patrones para detectar títulos de secciones
+    const titlePatterns = [
+      /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{3,}$/, // Todo mayúsculas
+      /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+:$/, // Título seguido de dos puntos
+      /^##?\s+/, // Markdown style
+      /^\d+[\.\)]\s+[A-Z]/, // Número seguido de texto en mayúscula
+    ]
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim()
+      
+      // Detectar si es un título
+      const isTitle = titlePatterns.some(pattern => pattern.test(line)) ||
+        (line.length < 80 && 
+         line.length > 5 && 
+         /^[A-ZÁÉÍÓÚÑ]/.test(line) &&
+         i < lines.length - 1 && 
+         lines[i + 1]?.trim().length > 50)
+      
+      if (isTitle && currentSection) {
+        // Guardar sección anterior
+        sections.push({
+          ...currentSection,
+          content: currentContent.join('\n').trim()
+        })
+        
+        // Iniciar nueva sección
+        currentSection = {
+          title: line.replace(/^##?\s+/, '').replace(/:$/, '').trim(),
+          content: '',
+          images: [],
+          level: 1
+        }
+        currentContent = []
+      } else if (isTitle && !currentSection) {
+        // Primera sección
+        currentSection = {
+          title: line.replace(/^##?\s+/, '').replace(/:$/, '').trim(),
+          content: '',
+          images: [],
+          level: 1
+        }
+        currentContent = []
+      } else if (currentSection) {
+        currentContent.push(line)
+      }
+    }
+    
+    // Añadir última sección
+    if (currentSection) {
+      sections.push({
+        ...currentSection,
+        content: currentContent.join('\n').trim()
+      })
+    }
+    
+    // Si no se detectaron secciones, crear una con todo el contenido
+    if (sections.length === 0) {
+      const paragraphs = fullText.split(/\n\s*\n/).filter(p => p.trim().length > 50)
+      sections.push(...paragraphs.map((para, idx) => ({
+        title: `Sección ${idx + 1}`,
+        content: para.trim(),
+        images: [],
+        level: 1
+      })))
+    }
+    
+    return sections
+  } catch (error) {
+    console.error('Error extrayendo PDF:', error)
+    return [{
+      title: 'Error',
+      content: 'No se pudo procesar el archivo PDF',
+      images: [],
+      level: 1
+    }]
+  }
+}
+
 // Extraer de Excel
 async function extractFromExcel(fileBuffer) {
   try {
@@ -241,6 +334,8 @@ router.post('/', upload.single('file'), async (req, res) => {
       allImages = extracted.allImages
     } else if (fileName.endsWith('.xlsx')) {
       sections = await extractFromExcel(fileBuffer)
+    } else if (fileName.endsWith('.pdf') || req.file.mimetype === 'application/pdf') {
+      sections = await extractFromPDF(fileBuffer)
     } else if (fileName.endsWith('.pptx')) {
       return res.status(400).json({
         error: 'PowerPoint (.pptx) requiere procesamiento adicional',
@@ -248,7 +343,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       })
     } else {
       return res.status(400).json({
-        error: 'Formato no soportado. Use .docx, .xlsx o .pptx'
+        error: 'Formato no soportado. Use .docx, .xlsx, .pdf o .pptx'
       })
     }
 
