@@ -93,9 +93,9 @@ export default function LogoCenter() {
 
         .logo-container {
           position: absolute;
-          top: 50%;
+          top: 5%;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translateX(-50%);
           z-index: 2;
           pointer-events: none;
           display: flex;
@@ -135,9 +135,9 @@ export default function LogoCenter() {
 
         .halo {
           position: absolute;
-          top: 50%;
+          top: 0;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translateX(-50%);
           width: 450px;
           height: 450px;
           border-radius: 50%;
@@ -156,9 +156,9 @@ export default function LogoCenter() {
         .halo::before {
           content: '';
           position: absolute;
-          top: 50%;
+          top: 0;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translateX(-50%);
           width: 380px;
           height: 380px;
           border-radius: 50%;
@@ -174,9 +174,9 @@ export default function LogoCenter() {
         .halo::after {
           content: '';
           position: absolute;
-          top: 50%;
+          top: 0;
           left: 50%;
-          transform: translate(-50%, -50%);
+          transform: translateX(-50%);
           width: 500px;
           height: 500px;
           border-radius: 50%;
