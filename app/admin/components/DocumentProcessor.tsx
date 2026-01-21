@@ -270,7 +270,7 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
       >
         <input
           type="file"
-          accept=".docx,.pptx"
+          accept=".docx,.pptx,.xlsx,.pdf"
           onChange={handleFileSelect}
           disabled={uploading || processing}
           style={{ display: 'none' }}
