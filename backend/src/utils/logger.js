@@ -14,22 +14,22 @@ const currentLevel = levels[LOG_LEVEL] || levels.error
 const logger = {
   error: (...args) => {
     if (currentLevel >= levels.error) {
-      logger.error('[ERROR]', ...args)
+      console.error('[ERROR]', ...args)
     }
   },
   warn: (...args) => {
     if (currentLevel >= levels.warn) {
-      logger.warn('[WARN]', ...args)
+      console.warn('[WARN]', ...args)
     }
   },
   info: (...args) => {
     if (currentLevel >= levels.info) {
-      logger.debug('[INFO]', ...args)
+      console.log('[INFO]', ...args)
     }
   },
   debug: (...args) => {
     if (currentLevel >= levels.debug) {
-      logger.debug('[DEBUG]', ...args)
+      console.log('[DEBUG]', ...args)
     }
   },
 }

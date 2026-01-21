@@ -5,6 +5,7 @@ import { AppContent, WidgetData } from '@/app/types'
 import VideoBackground from '@/app/components/VideoBackground'
 import Header from '@/app/components/Header'
 import WidgetEditor from './WidgetEditor'
+import VisualWidgetEditor from './VisualWidgetEditor'
 import ImageUploader from './ImageUploader'
 import SettingsEditor from './SettingsEditor'
 import DocumentProcessor from './DocumentProcessor'
@@ -21,6 +22,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string | React.ReactNode } | null>(null)
+  const [editorMode, setEditorMode] = useState<'simple' | 'visual'>('visual')
 
   useEffect(() => {
     loadContent()
@@ -787,10 +789,56 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   }}
                 >
                   {selectedWidget ? (
-                    <WidgetEditor
-                      widget={selectedWidget}
-                      onUpdate={updateWidget}
-                    />
+                    <div>
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '1rem', 
+                        marginBottom: '1rem',
+                        justifyContent: 'flex-end'
+                      }}>
+                        <button
+                          onClick={() => setEditorMode('visual')}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: editorMode === 'visual' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(255, 255, 255, 0.1)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: editorMode === 'visual' ? '600' : '400',
+                            fontSize: '0.9rem',
+                          }}
+                        >
+                          👁️ Editor Visual (WYSIWYG)
+                        </button>
+                        <button
+                          onClick={() => setEditorMode('simple')}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: editorMode === 'simple' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(255, 255, 255, 0.1)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: editorMode === 'simple' ? '600' : '400',
+                            fontSize: '0.9rem',
+                          }}
+                        >
+                          📝 Editor Simple
+                        </button>
+                      </div>
+                      {editorMode === 'visual' ? (
+                        <VisualWidgetEditor
+                          widget={selectedWidget}
+                          onUpdate={updateWidget}
+                        />
+                      ) : (
+                        <WidgetEditor
+                          widget={selectedWidget}
+                          onUpdate={updateWidget}
+                        />
+                      )}
+                    </div>
                   ) : (
                     <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', padding: '3rem' }}>
                       <p>Selecciona un widget para editarlo</p>

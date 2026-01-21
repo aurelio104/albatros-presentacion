@@ -17,6 +17,20 @@ const __dirname = path.dirname(__filename)
 // pdf-parse es CommonJS, necesitamos usar createRequire
 const require = createRequire(import.meta.url)
 
+// Función helper para obtener la URL del backend
+function getBackendUrl(req) {
+  if (process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL
+  }
+  if (process.env.KOYEB_URL) {
+    return process.env.KOYEB_URL
+  }
+  if (req && req.protocol && req.get('host')) {
+    return `${req.protocol}://${req.get('host')}`
+  }
+  return 'http://localhost:3001' // Fallback para desarrollo
+}
+
 // Importar pdf-parse de forma segura - función lazy para evitar errores al iniciar
 let pdfParseCache = null
 
@@ -262,7 +276,7 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
 }
 
 // Extraer contenido estructurado de Word con detección inteligente e imágenes
-async function extractStructuredContentFromWord(fileBuffer) {
+async function extractStructuredContentFromWord(fileBuffer, req = null) {
   try {
     logger.debug('📄 Procesando archivo Word...')
     
@@ -287,14 +301,14 @@ async function extractStructuredContentFromWord(fileBuffer) {
           const imagePath = path.join(imagesDir, imageName)
           await fs.writeFile(imagePath, imageBuffer)
           
-          const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+          const backendUrl = getBackendUrl(req)
           images.push(`${backendUrl}/images/${imageName}`)
         }
       }
     }
     
     // Método 2: Extraer imágenes directamente del ZIP (más confiable)
-    const zipImages = await extractImagesFromDocx(fileBuffer)
+    const zipImages = await extractImagesFromDocx(fileBuffer, req)
     // Combinar ambas listas, eliminando duplicados
     const allImages = [...new Set([...images, ...zipImages])]
     
@@ -310,7 +324,7 @@ async function extractStructuredContentFromWord(fileBuffer) {
     try {
       const textResult = await mammoth.extractRawText({ buffer: fileBuffer })
       // Intentar extraer imágenes del ZIP como fallback
-      const zipImages = await extractImagesFromDocx(fileBuffer)
+      const zipImages = await extractImagesFromDocx(fileBuffer, req)
       return {
         sections: [{
           title: 'Contenido Extraído',
@@ -545,7 +559,7 @@ function extractStructuredSections(fullText, images = []) {
 
 // Extraer imágenes del PDF usando análisis directo del buffer
 // pdf-lib no expone fácilmente las imágenes, así que usamos un enfoque de parsing directo
-async function extractImagesFromPDF(fileBuffer) {
+async function extractImagesFromPDF(fileBuffer, req = null) {
   const extractedImages = []
   const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
   await fs.mkdir(imagesDir, { recursive: true })
@@ -593,8 +607,8 @@ async function extractImagesFromPDF(fileBuffer) {
           
           await fs.writeFile(imagePath, imageData)
           
-          // URL para el frontend
-          const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+          // URL para el frontend - usar req para obtener la URL correcta
+          const backendUrl = getBackendUrl(req)
           const imageUrl = `${backendUrl}/images/${imageFilename}`
           extractedImages.push(imageUrl)
           
@@ -629,7 +643,7 @@ async function extractImagesFromPDF(fileBuffer) {
 }
 
 // Extraer contenido de PDF con detección inteligente e imágenes
-async function extractFromPDF(fileBuffer) {
+async function extractFromPDF(fileBuffer, req = null) {
   try {
     // Obtener pdfParse de forma lazy
     const pdfParse = getPdfParse()
@@ -652,7 +666,7 @@ async function extractFromPDF(fileBuffer) {
     logger.debug(`✅ PDF procesado: ${numPages} páginas, ${fullText.length} caracteres`)
     
     // Extraer imágenes del PDF
-    const extractedImages = await extractImagesFromPDF(fileBuffer)
+    const extractedImages = await extractImagesFromPDF(fileBuffer, req)
     
     // Extraer secciones con asociación inteligente de imágenes
     const result = extractStructuredSections(fullText, extractedImages)
@@ -694,7 +708,7 @@ async function extractFromPDF(fileBuffer) {
 }
 
 // Extraer imágenes de DOCX
-async function extractImagesFromDocx(fileBuffer) {
+async function extractImagesFromDocx(fileBuffer, req = null) {
   const images = []
   const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
   await fs.mkdir(imagesDir, { recursive: true })
@@ -710,7 +724,7 @@ async function extractImagesFromDocx(fileBuffer) {
         const imageName = `docx-${Date.now()}-${path.basename(entry.entryName)}`
         const imagePath = path.join(imagesDir, imageName)
         await fs.writeFile(imagePath, buffer)
-        const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+        const backendUrl = getBackendUrl(req)
         images.push(`${backendUrl}/images/${imageName}`)
         logger.debug(`✅ Imagen DOCX extraída: ${imageName}`)
       }
@@ -722,7 +736,7 @@ async function extractImagesFromDocx(fileBuffer) {
 }
 
 // Extraer imágenes de PPTX
-async function extractImagesFromPptx(fileBuffer) {
+async function extractImagesFromPptx(fileBuffer, req = null) {
   const images = []
   const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
   await fs.mkdir(imagesDir, { recursive: true })
@@ -738,7 +752,7 @@ async function extractImagesFromPptx(fileBuffer) {
         const imageName = `pptx-${Date.now()}-${path.basename(entry.entryName)}`
         const imagePath = path.join(imagesDir, imageName)
         await fs.writeFile(imagePath, buffer)
-        const backendUrl = process.env.BACKEND_URL || process.env.KOYEB_URL || 'http://localhost:3001'
+        const backendUrl = getBackendUrl(req)
         images.push(`${backendUrl}/images/${imageName}`)
         logger.debug(`✅ Imagen PPTX extraída: ${imageName}`)
       }
@@ -750,9 +764,9 @@ async function extractImagesFromPptx(fileBuffer) {
 }
 
 // Extraer contenido de PowerPoint
-async function extractFromPptx(fileBuffer) {
+async function extractFromPptx(fileBuffer, req = null) {
   const sections = []
-  const allImages = await extractImagesFromPptx(fileBuffer) // Extraer imágenes primero
+  const allImages = await extractImagesFromPptx(fileBuffer, req) // Extraer imágenes primero
 
   try {
     const zip = new AdmZip(fileBuffer)
@@ -922,7 +936,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       logger.debug('Procesando PDF:', fileName, fileMimeType)
       try {
         logger.debug('Iniciando procesamiento de PDF...')
-        const extracted = await extractFromPDF(fileBuffer)
+        const extracted = await extractFromPDF(fileBuffer, req)
         logger.debug('PDF procesado, estructura:', extracted)
         
         // Asegurar que extracted tiene la estructura correcta
@@ -955,7 +969,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       }
     } else if (fileName.endsWith('.docx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      const extracted = await extractStructuredContentFromWord(fileBuffer)
+      const extracted = await extractStructuredContentFromWord(fileBuffer, req)
       sections = extracted.sections
       allImages = extracted.allImages
     } else if (fileName.endsWith('.xlsx') || 
@@ -967,7 +981,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     } else if (fileName.endsWith('.pptx') || 
                fileMimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
       logger.debug('Procesando PowerPoint:', fileName, fileMimeType)
-      const extracted = await extractFromPptx(fileBuffer)
+      const extracted = await extractFromPptx(fileBuffer, req)
       sections = extracted.sections
       allImages = extracted.allImages || []
     } else {
