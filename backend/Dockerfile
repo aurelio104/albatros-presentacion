@@ -5,8 +5,8 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm install --production
+# Instalar dependencias (incluyendo pdf-parse)
+RUN npm install --production && npm list pdf-parse
 
 # Copiar código fuente
 COPY . .
