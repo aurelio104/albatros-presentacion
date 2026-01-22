@@ -195,6 +195,46 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setSelectedWidget(updatedWidget)
   }
 
+  const moveWidgetUp = (id: number) => {
+    if (!content) return
+    const widgets = [...content.widgets]
+    const index = widgets.findIndex(w => w.id === id)
+    if (index > 0) {
+      // Intercambiar posiciones
+      [widgets[index - 1], widgets[index]] = [widgets[index], widgets[index - 1]]
+      // Actualizar campo order
+      widgets.forEach((w, i) => {
+        w.order = i
+      })
+      setContent({
+        ...content,
+        widgets,
+      })
+      setMessage({ type: 'success', text: 'Widget movido hacia arriba' })
+      setTimeout(() => setMessage(null), 2000)
+    }
+  }
+
+  const moveWidgetDown = (id: number) => {
+    if (!content) return
+    const widgets = [...content.widgets]
+    const index = widgets.findIndex(w => w.id === id)
+    if (index < widgets.length - 1) {
+      // Intercambiar posiciones
+      [widgets[index], widgets[index + 1]] = [widgets[index + 1], widgets[index]]
+      // Actualizar campo order
+      widgets.forEach((w, i) => {
+        w.order = i
+      })
+      setContent({
+        ...content,
+        widgets,
+      })
+      setMessage({ type: 'success', text: 'Widget movido hacia abajo' })
+      setTimeout(() => setMessage(null), 2000)
+    }
+  }
+
   const handleLoadPresentation = (loadedContent: AppContent) => {
     setContent(loadedContent)
     setSelectedWidget(null)
@@ -732,7 +772,9 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {content.widgets.map((widget) => {
+                    {[...content.widgets]
+                      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                      .map((widget, index) => {
                       const isSelected = selectedWidgetIds.has(widget.id)
                       const isActive = selectedWidget?.id === widget.id
                       return (
@@ -794,30 +836,96 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             />
                             <span style={{ fontWeight: '500', flex: 1 }}>{widget.title}</span>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              deleteWidget(widget.id)
-                            }}
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              background: 'rgba(239, 68, 68, 0.3)',
-                              color: 'white',
-                              border: '1px solid rgba(239, 68, 68, 0.5)',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '0.8rem',
-                              transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
-                            }}
-                          >
-                            ×
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            {/* Botones de reordenamiento */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                moveWidgetUp(widget.id)
+                              }}
+                              disabled={index === 0}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                background: index === 0 ? 'rgba(100, 100, 100, 0.3)' : 'rgba(59, 130, 246, 0.3)',
+                                color: 'white',
+                                border: `1px solid ${index === 0 ? 'rgba(100, 100, 100, 0.5)' : 'rgba(59, 130, 246, 0.5)'}`,
+                                borderRadius: '4px',
+                                cursor: index === 0 ? 'not-allowed' : 'pointer',
+                                fontSize: '0.8rem',
+                                transition: 'all 0.2s',
+                                opacity: index === 0 ? 0.5 : 1,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (index > 0) {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.5)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (index > 0) {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.3)'
+                                }
+                              }}
+                              title="Mover arriba"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                moveWidgetDown(widget.id)
+                              }}
+                              disabled={index === content.widgets.length - 1}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                background: index === content.widgets.length - 1 ? 'rgba(100, 100, 100, 0.3)' : 'rgba(59, 130, 246, 0.3)',
+                                color: 'white',
+                                border: `1px solid ${index === content.widgets.length - 1 ? 'rgba(100, 100, 100, 0.5)' : 'rgba(59, 130, 246, 0.5)'}`,
+                                borderRadius: '4px',
+                                cursor: index === content.widgets.length - 1 ? 'not-allowed' : 'pointer',
+                                fontSize: '0.8rem',
+                                transition: 'all 0.2s',
+                                opacity: index === content.widgets.length - 1 ? 0.5 : 1,
+                              }}
+                              onMouseEnter={(e) => {
+                                if (index < content.widgets.length - 1) {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.5)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (index < content.widgets.length - 1) {
+                                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.3)'
+                                }
+                              }}
+                              title="Mover abajo"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteWidget(widget.id)
+                              }}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                background: 'rgba(239, 68, 68, 0.3)',
+                                color: 'white',
+                                border: '1px solid rgba(239, 68, 68, 0.5)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                transition: 'all 0.2s',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
+                              }}
+                              title="Eliminar"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
                       )
                     })}
