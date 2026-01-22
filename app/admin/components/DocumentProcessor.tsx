@@ -151,8 +151,15 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
               borderColor: 'rgba(255, 255, 255, 0.3)',
               textColor: '#ffffff',
               borderRadius: 16,
+              // CRÍTICO: Incluir fullPageImage y backgroundImage del backend
+              // Esto preserva el layout exacto del documento original
+              fullPageImage: widget.style?.fullPageImage || widget.fullPageImage || undefined,
+              backgroundImage: widget.style?.backgroundImage || widget.backgroundImage || undefined,
+              backgroundSize: widget.style?.backgroundSize || (widget.style?.fullPageImage || widget.style?.backgroundImage ? 'cover' : undefined),
+              backgroundPosition: widget.style?.backgroundPosition || (widget.style?.fullPageImage || widget.style?.backgroundImage ? 'center' : undefined),
             },
-            order: widget.order ?? index,
+            order: widget.order ?? index, // Usar order del backend para mantener orden preciso
+            displayMode: widget.displayMode || 'resumen',
           }))
           
           onWidgetsGenerated(newWidgets)
@@ -172,7 +179,7 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
   const generateWidgets = () => {
     if (!result) return
 
-    const newWidgets: WidgetData[] = result.widgets.map((widget, index) => ({
+    const newWidgets: WidgetData[] = result.widgets.map((widget: any, index: number) => ({
       id: Date.now() + index,
       title: widget.title,
       preview: widget.preview,
@@ -193,8 +200,15 @@ export default function DocumentProcessor({ onWidgetsGenerated }: DocumentProces
         borderColor: 'rgba(255, 255, 255, 0.3)',
         textColor: '#ffffff',
         borderRadius: 16,
+        // CRÍTICO: Incluir fullPageImage y backgroundImage del backend
+        // Esto preserva el layout exacto del documento original
+        fullPageImage: widget.style?.fullPageImage || widget.fullPageImage || undefined,
+        backgroundImage: widget.style?.backgroundImage || widget.backgroundImage || undefined,
+        backgroundSize: widget.style?.backgroundSize || (widget.style?.fullPageImage || widget.style?.backgroundImage ? 'cover' : undefined),
+        backgroundPosition: widget.style?.backgroundPosition || (widget.style?.fullPageImage || widget.style?.backgroundImage ? 'center' : undefined),
       },
-      order: widget.order ?? index,
+      order: widget.order ?? index, // Usar order del backend para mantener orden preciso
+      displayMode: widget.displayMode || 'resumen',
     }))
 
     onWidgetsGenerated(newWidgets)

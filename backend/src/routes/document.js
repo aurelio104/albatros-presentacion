@@ -1245,24 +1245,29 @@ async function extractFromPptx(fileBuffer, req = null) {
       const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
 
       // Obtener la imagen completa renderizada de esta diapositiva (copia exacta del original)
-      // CRÍTICO: El array fullPageImages está ordenado por número de diapositiva
-      // Índice 0 = Diapositiva 1, Índice 1 = Diapositiva 2, etc.
-      // Usar la posición en el loop (i) en lugar de slideNumber para garantizar correspondencia
-      // porque las diapositivas XML ya están ordenadas y el array de imágenes también está ordenado
-      const imageIndex = i // Usar índice del loop, no slideNumber - 1
+      // CRÍTICO: El array fullPageImages está ordenado secuencialmente según el orden de los archivos PNG
+      // Las diapositivas XML están ordenadas (slide1.xml, slide2.xml, slide3.xml...)
+      // Las imágenes PNG están ordenadas (presentation.1.png, presentation.2.png, presentation.3.png...)
+      // El array fullPageImages se llena en ese mismo orden secuencial
+      // Por lo tanto: posición en loop (i) = índice en array = número de diapositiva - 1
+      const imageIndex = i // Índice del loop que itera sobre diapositivas XML ordenadas
       const fullPageImage = (imageIndex >= 0 && imageIndex < fullPageImages.length) 
         ? fullPageImages[imageIndex] 
         : null
       
+      // Log detallado para debugging
+      logger.debug(`🔍 Mapeo diapositiva: slideNumber=${slideNumber}, posición en loop=${i + 1}, índice array=${imageIndex}, total imágenes=${fullPageImages.length}`)
+      
       if (!fullPageImage) {
         if (fullPageImages.length > 0) {
           logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} en posición ${i + 1} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
-          logger.warn(`⚠️  slideNumber=${slideNumber}, posición en loop=${i + 1}, índice array=${imageIndex}`)
+          logger.warn(`⚠️  Array de imágenes disponible: ${fullPageImages.map((img, idx) => `[${idx}]=${img ? img.substring(img.lastIndexOf('/') + 1) : 'null'}`).join(', ')}`)
         } else {
           logger.debug(`ℹ️  No hay imágenes renderizadas disponibles (LibreOffice puede no estar disponible)`)
         }
       } else {
-        logger.debug(`✅ Imagen encontrada para diapositiva ${slideNumber} (posición ${i + 1}, índice ${imageIndex}): ${fullPageImage.substring(fullPageImage.lastIndexOf('/') + 1)}`)
+        const imageFileName = fullPageImage.substring(fullPageImage.lastIndexOf('/') + 1)
+        logger.debug(`✅ CORRECTO: Diapositiva ${slideNumber} (posición ${i + 1}) → Índice ${imageIndex} → Imagen: ${imageFileName}`)
       }
 
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
