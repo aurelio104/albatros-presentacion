@@ -11,16 +11,19 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Detectar si estamos en Koyeb (con volumen persistente)
+// STORAGE_PATH debe estar configurado explícitamente en Koyeb
 const STORAGE_BASE = process.env.STORAGE_PATH || '/app/storage'
-const IS_KOYEB = process.env.KOYEB_APP || process.env.KOYEB_SERVICE || false
+// Detectar Koyeb por variables de entorno o por la presencia de STORAGE_PATH
+const IS_KOYEB = !!process.env.STORAGE_PATH || process.env.KOYEB_APP || process.env.KOYEB_SERVICE || false
 
 // Si no estamos en Koyeb o el volumen no está montado, usar rutas relativas
 const getStorageBase = () => {
-  // En desarrollo o si STORAGE_PATH no está configurado, usar directorio relativo
-  if (!IS_KOYEB || !process.env.STORAGE_PATH) {
-    return path.join(__dirname, '..', '..')
+  // Si STORAGE_PATH está configurado, usarlo (Koyeb con volumen)
+  if (process.env.STORAGE_PATH) {
+    return process.env.STORAGE_PATH
   }
-  return STORAGE_BASE
+  // En desarrollo, usar directorio relativo
+  return path.join(__dirname, '..', '..')
 }
 
 // Rutas de almacenamiento
