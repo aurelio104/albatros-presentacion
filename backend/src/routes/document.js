@@ -1109,23 +1109,35 @@ async function renderAllSlidesAsImages(fileBuffer, req = null) {
       // Genera: presentation.1.png, presentation.2.png, etc.
       await execAsync(`libreoffice --headless --convert-to png --outdir "${tempOutputDir}" "${tempPptxPath}" 2>&1 || true`)
       
-      // Buscar todas las imágenes generadas
+      // Buscar todas las imágenes generadas y ORDENARLAS numéricamente
+      // LibreOffice genera: presentation.1.png, presentation.2.png, etc.
       const files = await fs.readdir(tempOutputDir)
-      const pngFiles = files.filter(f => f.endsWith('.png')).sort()
+      const pngFiles = files
+        .filter(f => f.endsWith('.png'))
+        .sort((a, b) => {
+          // Ordenar numéricamente: presentation.1.png, presentation.2.png, etc.
+          const numA = parseInt(a.match(/\.(\d+)\.png$/)?.[1] || '0')
+          const numB = parseInt(b.match(/\.(\d+)\.png$/)?.[1] || '0')
+          return numA - numB // Orden ascendente
+        })
       
       const backendUrl = getBackendUrl(req)
       
       for (let i = 0; i < pngFiles.length; i++) {
         const pngFile = pngFiles[i]
         const sourcePath = path.join(tempOutputDir, pngFile)
-        const slideNumber = i + 1
+        
+        // Extraer número de diapositiva del nombre del archivo
+        const slideNumberMatch = pngFile.match(/\.(\d+)\.png$/)
+        const slideNumber = slideNumberMatch ? parseInt(slideNumberMatch[1]) : i + 1
+        
         const imageName = `pptx-full-${Date.now()}-slide${slideNumber}.png`
         const finalImagePath = path.join(imagesDir, imageName)
         
         try {
           await fs.copyFile(sourcePath, finalImagePath)
           slideImages.push(`${backendUrl}/images/${imageName}`)
-          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
+          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName} (índice ${i})`)
         } catch (copyError) {
           logger.debug(`⚠️  Error copiando imagen de diapositiva ${slideNumber}:`, copyError.message)
         }
@@ -1156,7 +1168,15 @@ async function extractFromPptx(fileBuffer, req = null) {
 
   try {
     const zip = new AdmZip(fileBuffer)
-    const slideXmlEntries = zip.getEntries().filter(entry => entry.entryName.startsWith('ppt/slides/slide') && entry.entryName.endsWith('.xml'))
+    // Filtrar y ORDENAR las diapositivas por número para garantizar orden correcto
+    const slideXmlEntries = zip.getEntries()
+      .filter(entry => entry.entryName.startsWith('ppt/slides/slide') && entry.entryName.endsWith('.xml'))
+      .sort((a, b) => {
+        // Extraer números de diapositiva para ordenar numéricamente
+        const numA = parseInt(a.entryName.match(/slide(\d+)\.xml/)?.[1] || '0')
+        const numB = parseInt(b.entryName.match(/slide(\d+)\.xml/)?.[1] || '0')
+        return numA - numB // Orden ascendente: slide1, slide2, slide3...
+      })
 
     for (let i = 0; i < slideXmlEntries.length; i++) {
       const entry = slideXmlEntries[i]
@@ -1165,6 +1185,11 @@ async function extractFromPptx(fileBuffer, req = null) {
       // Extraer número de diapositiva del nombre del archivo (ej: "ppt/slides/slide1.xml" -> 1)
       const slideNumberMatch = entry.entryName.match(/slide(\d+)\.xml/)
       const slideNumber = slideNumberMatch ? parseInt(slideNumberMatch[1]) : i + 1
+      
+      // Verificar que el índice corresponde al número de diapositiva
+      if (slideNumber !== i + 1) {
+        logger.warn(`⚠️  Advertencia: Diapositiva ${slideNumber} en posición ${i + 1}. Ajustando orden.`)
+      }
 
       const result = await parseStringPromise(xmlContent)
 
@@ -1200,7 +1225,14 @@ async function extractFromPptx(fileBuffer, req = null) {
       const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
 
       // Obtener la imagen completa renderizada de esta diapositiva (copia exacta del original)
-      const fullPageImage = fullPageImages[i] || null
+      // IMPORTANTE: Usar slideNumber - 1 porque las imágenes están indexadas desde 0
+      // pero slideNumber es 1-based (slide1 = índice 0, slide2 = índice 1, etc.)
+      const imageIndex = slideNumber - 1
+      const fullPageImage = fullPageImages[imageIndex] || null
+      
+      if (!fullPageImage && fullPageImages.length > 0) {
+        logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
+      }
 
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
       const slideImages = []
@@ -1216,7 +1248,8 @@ async function extractFromPptx(fileBuffer, req = null) {
         images: slideImages,
         backgroundImage, // Imagen de fondo de la diapositiva
         fullPageImage: fullPageImage || backgroundImage || null, // Imagen completa renderizada (copia exacta) o fondo como fallback
-        level: 1 // Todas las diapositivas son nivel 1 por defecto
+        level: 1, // Todas las diapositivas son nivel 1 por defecto
+        slideNumber: slideNumber // Número de diapositiva para referencia y ordenamiento
       })
     }
   } catch (error) {
