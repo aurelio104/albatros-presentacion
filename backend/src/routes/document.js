@@ -1554,6 +1554,10 @@ router.post('/', upload.single('file'), async (req, res) => {
         fullPageImage: section.fullPageImage || undefined, // Imagen completa de la página/diapositiva (exactamente igual al original)
       }
 
+      // Para PowerPoint: usar slideNumber para ordenamiento preciso
+      // Para otros archivos: usar index
+      const widgetOrder = section.slideNumber !== undefined ? section.slideNumber - 1 : index
+
       return {
         title: section.title || `Sección ${index + 1}`,
         preview: preview || (finalDescription.length > 150 ? finalDescription.substring(0, 150) + '...' : finalDescription), // Preview preservado
@@ -1562,7 +1566,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         category: section.category,
         images: sectionImages, // Imágenes específicas de esta sección, correctamente asociadas
         style: widgetStyle, // Estilo con fondo si existe
-        order: index,
+        order: widgetOrder, // Orden basado en número de diapositiva para PowerPoint, índice para otros
         level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
         displayMode: 'resumen' // Por defecto mostrar resumen, el admin puede cambiarlo a 'completo'
       }
