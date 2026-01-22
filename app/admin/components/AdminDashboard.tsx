@@ -9,6 +9,7 @@ import VisualWidgetEditor from './VisualWidgetEditor'
 import ImageUploader from './ImageUploader'
 import SettingsEditor from './SettingsEditor'
 import DocumentProcessor from './DocumentProcessor'
+import PresentationsManager from './PresentationsManager'
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -18,7 +19,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [content, setContent] = useState<AppContent | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images' | 'documents'>('widgets')
+  const [activeTab, setActiveTab] = useState<'widgets' | 'settings' | 'images' | 'documents' | 'presentations'>('widgets')
   const [selectedWidget, setSelectedWidget] = useState<WidgetData | null>(null)
   const [selectedWidgetIds, setSelectedWidgetIds] = useState<Set<number>>(new Set())
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string | React.ReactNode } | null>(null)
@@ -191,6 +192,15 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       ),
     })
     setSelectedWidget(updatedWidget)
+  }
+
+  const handleLoadPresentation = (loadedContent: AppContent) => {
+    setContent(loadedContent)
+    setSelectedWidget(null)
+    setSelectedWidgetIds(new Set())
+    setActiveTab('widgets')
+    setMessage({ type: 'success', text: 'Presentación cargada exitosamente' })
+    setTimeout(() => setMessage(null), 3000)
   }
 
   const updateSettings = (settings: AppContent['settings']) => {
@@ -562,7 +572,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
               border: '1px solid rgba(255, 255, 255, 0.2)',
             }}
           >
-            {(['widgets', 'documents', 'settings', 'images'] as const).map((tab) => (
+            {(['widgets', 'documents', 'settings', 'images', 'presentations'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -593,6 +603,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 {tab === 'documents' && '🤖 IA Documentos'}
                 {tab === 'settings' && 'Configuración'}
                 {tab === 'images' && 'Imágenes'}
+                {tab === 'presentations' && '📚 Presentaciones'}
               </button>
             ))}
           </div>
@@ -918,6 +929,25 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 }}
               >
                 <DocumentProcessor onWidgetsGenerated={handleWidgetsGenerated} />
+              </div>
+            )}
+
+            {activeTab === 'presentations' && (
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '2rem',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                }}
+              >
+                <PresentationsManager 
+                  currentContent={content} 
+                  onLoadPresentation={handleLoadPresentation}
+                />
               </div>
             )}
 
