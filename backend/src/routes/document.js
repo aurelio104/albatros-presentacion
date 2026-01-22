@@ -494,18 +494,17 @@ function extractStructuredSections(fullText, images = []) {
     if (titleLevel !== null) {
       // Guardar sección anterior si existe
       if (currentSection && (currentContent.length > 0 || currentSection.title)) {
-        // Asociar imágenes a esta sección antes de guardarla
-        const result = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords, usedImages)
-        const sectionImages = result.images
+        // Las imágenes ya están insertadas en el contenido como marcadores HTML
+        // Solo necesitamos preservar el contenido con las imágenes inline
         // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
         const preservedContent = currentContent.join('\n')
         sections.push({
           ...currentSection,
-          content: preservedContent, // Sin .trim() para preservar espacios
-          images: sectionImages,
+          content: preservedContent, // Contenido con imágenes inline como HTML
+          images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
           level: currentLevel
         })
-        sectionImageIndex += sectionImages.length
+        sectionImageIndex += currentSection.images.length
       }
       
       // Crear nueva sección - limpiar título pero preservar estructura
@@ -524,13 +523,13 @@ function extractStructuredSections(fullText, images = []) {
       currentLevel = titleLevel
       currentContent = [] // Reiniciar con array vacío
     } else if (currentSection) {
-      // Agregar contenido a la sección actual - PRESERVAR línea original
-      currentContent.push(originalLine) // Guardar línea original completa
-      
-      // Detectar si esta línea menciona una imagen
+      // Detectar si esta línea menciona una imagen ANTES de agregarla
       const hasImageReference = imageKeywords.some(keyword => 
         line.toLowerCase().includes(keyword.toLowerCase())
       )
+      
+      // Agregar contenido a la sección actual - PRESERVAR línea original
+      let lineToAdd = originalLine
       
       if (hasImageReference && images.length > 0 && currentSection) {
         // Buscar la siguiente imagen disponible que no esté ya usada
@@ -538,11 +537,16 @@ function extractStructuredSections(fullText, images = []) {
           !usedImages.has(img) && !currentSection.images.includes(img)
         )
         if (nextAvailableImage) {
+          // Insertar marcador de imagen HTML justo después de la línea que menciona la imagen
+          // Usar un marcador que ReactQuill pueda renderizar
+          lineToAdd = originalLine + '\n\n<img src="' + nextAvailableImage + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px;" />\n\n'
           currentSection.images.push(nextAvailableImage)
           usedImages.add(nextAvailableImage)
           sectionImageIndex++
         }
       }
+      
+      currentContent.push(lineToAdd) // Guardar línea con marcador de imagen si aplica
     } else if (line.length > 50) {
       // Si no hay sección actual pero hay contenido, crear una
       currentSection = {
@@ -576,14 +580,13 @@ function extractStructuredSections(fullText, images = []) {
   
   // Agregar última sección
   if (currentSection) {
-    const result = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords, usedImages)
-    const sectionImages = result.images
+    // Las imágenes ya están insertadas en el contenido como marcadores HTML
     // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
     const preservedContent = currentContent.join('\n')
     sections.push({
       ...currentSection,
-      content: preservedContent, // Sin .trim() para preservar espacios
-      images: sectionImages,
+      content: preservedContent, // Contenido con imágenes inline como HTML
+      images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
       level: currentLevel
     })
   }

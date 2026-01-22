@@ -263,11 +263,19 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               marginBottom: '1rem',
             }}
           >
-            {renderContent(
-              editedWidget.displayMode === 'completo' 
-                ? editedWidget.content.description 
-                : editedWidget.preview,
-              true
+            {editedWidget.displayMode === 'completo' ? (
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: editedWidget.content.description
+                    .replace(/\n/g, '<br>')
+                    .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
+                      const httpsSrc = ensureHttps(src)
+                      return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
+                    })
+                }}
+              />
+            ) : (
+              renderContent(editedWidget.preview, true)
             )}
           </div>
 
@@ -531,7 +539,26 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               fontWeight: '500', 
               color: '#ffffff' 
             }}>
-              Imágenes (Arrastra para reordenar)
+              Imágenes en el Contenido (Las imágenes ya están insertadas en el texto donde se mencionan)
+            </label>
+            <p style={{ 
+              fontSize: '0.85rem', 
+              color: 'rgba(255, 255, 255, 0.7)', 
+              marginBottom: '1rem',
+              padding: '0.5rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '6px',
+            }}>
+              💡 Las imágenes se insertan automáticamente en el texto donde se mencionan. Puedes editarlas directamente en el editor visual arriba.
+            </p>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.5rem', 
+              marginTop: '1.5rem',
+              fontWeight: '500', 
+              color: '#ffffff' 
+            }}>
+              Todas las Imágenes del Widget (Referencia)
             </label>
             <div style={{
               display: 'grid',

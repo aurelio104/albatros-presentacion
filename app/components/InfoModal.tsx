@@ -104,9 +104,16 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           line-height: 1.8;
           margin-bottom: 2rem;
           color: #333;
-          white-space: pre-wrap; /* PRESERVAR: espacios, saltos de línea, formato original */
           word-wrap: break-word;
           overflow-wrap: break-word;
+        }
+        
+        .modal-description img {
+          max-width: 100%;
+          height: auto;
+          margin: 1rem 0;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .modal-images {
@@ -256,30 +263,18 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
 
           <h1 className="modal-title">{widget.content.title}</h1>
 
-          <p className="modal-description">{widget.content.description}</p>
-
-          {widget.content.images && widget.content.images.length > 0 && (
-            <div className="modal-images">
-              {widget.content.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={ensureHttps(image)}
-                  alt={`${widget.content.title} ${index + 1}`}
-                  className="modal-image"
-                  loading="lazy"
-                  onError={(e) => {
-                    // Si falla, intentar con HTTPS si era HTTP
-                    const target = e.target as HTMLImageElement
-                    if (target.src.startsWith('http://')) {
-                      target.src = ensureHttps(target.src)
-                    } else {
-                      target.style.display = 'none'
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          {/* Renderizar descripción con imágenes inline si están en HTML */}
+          <div 
+            className="modal-description"
+            dangerouslySetInnerHTML={{
+              __html: widget.content.description
+                .replace(/\n/g, '<br>')
+                .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
+                  const httpsSrc = ensureHttps(src)
+                  return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" loading="lazy" onerror="this.style.display='none'" />`
+                })
+            }}
+          />
 
           {widget.content.additionalInfo && (
             <div className="modal-additional">
