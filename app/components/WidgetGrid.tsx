@@ -95,19 +95,23 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         ref={ref}
         onClick={() => onWidgetClick(widget)}
         style={{
-        // Si hay imagen de fondo (PowerPoint), usarla; si no, usar color de fondo
-        backgroundImage: defaultStyle.backgroundImage 
-          ? `url(${ensureHttps(defaultStyle.backgroundImage)})` 
+        // Si hay fullPageImage (imagen completa de la página/diapositiva), usarla como fondo principal
+        // Esto preserva el layout exacto del original
+        backgroundImage: (defaultStyle.fullPageImage || defaultStyle.backgroundImage)
+          ? `url(${ensureHttps(defaultStyle.fullPageImage || defaultStyle.backgroundImage)})` 
           : undefined,
-        backgroundSize: defaultStyle.backgroundSize || (defaultStyle.backgroundImage ? 'cover' : undefined),
-        backgroundPosition: defaultStyle.backgroundPosition || (defaultStyle.backgroundImage ? 'center' : undefined),
-        backgroundRepeat: defaultStyle.backgroundImage ? 'no-repeat' : undefined,
-        // Si hay fondo, agregar overlay semi-transparente para legibilidad del texto
-        backgroundColor: defaultStyle.backgroundImage 
-          ? 'rgba(0, 0, 0, 0.4)' // Overlay oscuro para legibilidad
-          : (defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)'),
-        backdropFilter: defaultStyle.backgroundImage ? 'none' : 'blur(10px)', // No blur si hay fondo de imagen
-        WebkitBackdropFilter: defaultStyle.backgroundImage ? 'none' : 'blur(10px)',
+        backgroundSize: defaultStyle.backgroundSize || ((defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'cover' : undefined),
+        backgroundPosition: defaultStyle.backgroundPosition || ((defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'center' : undefined),
+        backgroundRepeat: (defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'no-repeat' : undefined,
+        // Si hay fullPageImage (renderizado exacto), usar overlay más transparente para no ocultar el diseño original
+        // Si solo hay backgroundImage (solo fondo), usar overlay más oscuro para legibilidad
+        backgroundColor: defaultStyle.fullPageImage
+          ? 'rgba(0, 0, 0, 0.1)' // Overlay muy transparente para preservar diseño exacto
+          : (defaultStyle.backgroundImage 
+            ? 'rgba(0, 0, 0, 0.4)' // Overlay oscuro para legibilidad cuando solo hay fondo
+            : (defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)')),
+        backdropFilter: (defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'none' : 'blur(10px)', // No blur si hay fondo de imagen
+        WebkitBackdropFilter: (defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'none' : 'blur(10px)',
         border: `1px solid ${defaultStyle.borderColor || 'rgba(255, 255, 255, 0.2)'}`,
         borderRadius: defaultStyle.borderRadius ? `${defaultStyle.borderRadius}px` : '16px',
         padding: '2rem',

@@ -19,6 +19,7 @@ export interface WidgetStyle {
   backgroundImage?: string // URL de imagen de fondo (para PowerPoint)
   backgroundSize?: 'cover' | 'contain' | 'auto' // Tamaño del fondo
   backgroundPosition?: string // Posición del fondo
+  fullPageImage?: string // URL de imagen completa de la página/diapositiva (renderizada exactamente igual al original)
 }
 
 export type WidgetCategory = 

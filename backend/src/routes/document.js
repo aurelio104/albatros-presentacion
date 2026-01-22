@@ -1136,11 +1136,16 @@ async function extractFromPptx(fileBuffer, req = null) {
         slideImages.push(allImages[startIndex + j])
       }
 
+      // Para PowerPoint: la imagen completa de la diapositiva será el fondo + contenido renderizado
+      // Por ahora usamos el backgroundImage como fullPageImage (se mejorará con renderizado completo)
+      const fullPageImage = backgroundImage || null // TODO: Renderizar diapositiva completa como imagen
+      
       sections.push({
         title,
         content,
         images: slideImages,
         backgroundImage, // Imagen de fondo de la diapositiva
+        fullPageImage, // Imagen completa de la diapositiva (fondo + contenido, exactamente igual al original)
         level: 1 // Todas las diapositivas son nivel 1 por defecto
       })
     }

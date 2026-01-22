@@ -73,7 +73,11 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          background-color: rgba(0, 0, 0, 0.6); /* Overlay para legibilidad */
+          background-color: var(--modal-bg-overlay, rgba(0, 0, 0, 0.6)); /* Overlay para legibilidad */
+        }
+        
+        .modal-content.with-full-page {
+          background-color: var(--modal-bg-overlay, rgba(0, 0, 0, 0.1)); /* Overlay muy transparente para preservar diseño exacto */
         }
 
         .modal-close {
@@ -265,9 +269,10 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
       `}</style>
       <div className="modal-overlay" onClick={onClose}>
         <div 
-          className={`modal-content ${widget.style?.backgroundImage ? 'with-background' : ''}`}
-          style={widget.style?.backgroundImage ? {
-            '--modal-bg-image': `url(${ensureHttps(widget.style.backgroundImage)})`
+          className={`modal-content ${(widget.style?.fullPageImage || widget.style?.backgroundImage) ? 'with-background' : ''} ${widget.style?.fullPageImage ? 'with-full-page' : ''}`}
+          style={(widget.style?.fullPageImage || widget.style?.backgroundImage) ? {
+            '--modal-bg-image': `url(${ensureHttps(widget.style.fullPageImage || widget.style.backgroundImage)})`,
+            '--modal-bg-overlay': widget.style.fullPageImage ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.6)'
           } as React.CSSProperties : {}}
           onClick={(e) => e.stopPropagation()}
         >
