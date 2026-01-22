@@ -12,6 +12,7 @@ import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
 const router = express.Router()
 const CONTENT_FILE = STORAGE_PATHS.content()
 const PRESENTATIONS_DIR = STORAGE_PATHS.presentations()
+const ACTIVE_PRESENTATION_FILE = path.join(STORAGE_PATHS.data(), 'active-presentation.json')
 
 // Asegurar que el directorio de presentaciones existe
 async function ensurePresentationsDir() {
@@ -50,13 +51,24 @@ router.get('/', async (req, res) => {
             }
           }
           
+          // Leer qué presentación está activa
+          let isActive = false
+          try {
+            const activeData = await fs.readFile(ACTIVE_PRESENTATION_FILE, 'utf-8')
+            const activeInfo = JSON.parse(activeData)
+            isActive = activeInfo.id === file.replace('.json', '')
+          } catch (error) {
+            // No hay presentación activa o archivo no existe
+          }
+          
           presentations.push({
             id: file.replace('.json', ''),
             name: data.name || file.replace('.json', ''),
             filename: file,
             timestamp: data.timestamp || null,
             date: parsedDate,
-            widgetCount: data.content?.widgets?.length || 0
+            widgetCount: data.content?.widgets?.length || 0,
+            isActive
           })
         } catch (error) {
           logger.warn(`Error leyendo presentación ${file}:`, error.message)
@@ -260,6 +272,18 @@ router.delete('/:id', async (req, res) => {
       await fs.unlink(filePath)
       logger.info(`✅ Presentación eliminada: ${id}`)
       
+      // Si la presentación eliminada era la activa, limpiar el archivo de activa
+      try {
+        const activeData = await fs.readFile(ACTIVE_PRESENTATION_FILE, 'utf-8')
+        const activeInfo = JSON.parse(activeData)
+        if (activeInfo.id === id) {
+          await fs.unlink(ACTIVE_PRESENTATION_FILE)
+          logger.info(`✅ Presentación activa eliminada, limpiando estado activo`)
+        }
+      } catch (error) {
+        // No hay presentación activa o archivo no existe
+      }
+      
       res.json({
         success: true,
         message: 'Presentación eliminada exitosamente'
@@ -277,6 +301,127 @@ router.delete('/:id', async (req, res) => {
     logger.error('Error eliminando presentación:', error)
     res.status(500).json({
       error: 'Error al eliminar presentación',
+      details: error.message || 'Error desconocido'
+    })
+  }
+})
+
+// GET - Obtener la presentación activa
+router.get('/active', async (req, res) => {
+  try {
+    try {
+      const activeData = await fs.readFile(ACTIVE_PRESENTATION_FILE, 'utf-8')
+      const activeInfo = JSON.parse(activeData)
+      
+      // Verificar que la presentación activa existe
+      const filePath = path.join(PRESENTATIONS_DIR, `${activeInfo.id}.json`)
+      try {
+        await fs.access(filePath)
+        res.json({
+          success: true,
+          active: activeInfo
+        })
+      } catch (error) {
+        // La presentación activa no existe, limpiar
+        await fs.unlink(ACTIVE_PRESENTATION_FILE)
+        res.json({
+          success: true,
+          active: null
+        })
+      }
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        res.json({
+          success: true,
+          active: null
+        })
+      } else {
+        throw error
+      }
+    }
+  } catch (error) {
+    logger.error('Error obteniendo presentación activa:', error)
+    res.status(500).json({
+      error: 'Error al obtener presentación activa',
+      details: error.message || 'Error desconocido'
+    })
+  }
+})
+
+// POST - Marcar una presentación como activa
+router.post('/active/:id', async (req, res) => {
+  try {
+    await ensureStorageDir(STORAGE_PATHS.data())
+    
+    const id = req.params.id
+    
+    // Verificar que la presentación existe
+    const filePath = path.join(PRESENTATIONS_DIR, `${id}.json`)
+    try {
+      await fs.access(filePath)
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({
+          error: 'Presentación no encontrada'
+        })
+      }
+      throw error
+    }
+    
+    // Leer la presentación para obtener su nombre
+    const content = await fs.readFile(filePath, 'utf-8')
+    const data = JSON.parse(content)
+    
+    // Guardar como activa
+    const activeInfo = {
+      id,
+      name: data.name || id,
+      timestamp: new Date().toISOString()
+    }
+    
+    await fs.writeFile(ACTIVE_PRESENTATION_FILE, JSON.stringify(activeInfo, null, 2), 'utf-8')
+    
+    logger.info(`✅ Presentación activa establecida: ${data.name} (${id})`)
+    
+    res.json({
+      success: true,
+      message: 'Presentación activa establecida exitosamente',
+      active: activeInfo
+    })
+  } catch (error) {
+    logger.error('Error estableciendo presentación activa:', error)
+    res.status(500).json({
+      error: 'Error al establecer presentación activa',
+      details: error.message || 'Error desconocido'
+    })
+  }
+})
+
+// POST - Desactivar presentación activa
+router.post('/active/clear', async (req, res) => {
+  try {
+    try {
+      await fs.unlink(ACTIVE_PRESENTATION_FILE)
+      logger.info(`✅ Presentación activa desactivada`)
+      
+      res.json({
+        success: true,
+        message: 'Presentación activa desactivada exitosamente'
+      })
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        res.json({
+          success: true,
+          message: 'No hay presentación activa'
+        })
+      } else {
+        throw error
+      }
+    }
+  } catch (error) {
+    logger.error('Error desactivando presentación activa:', error)
+    res.status(500).json({
+      error: 'Error al desactivar presentación activa',
       details: error.message || 'Error desconocido'
     })
   }

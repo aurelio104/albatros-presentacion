@@ -34,6 +34,37 @@ function getDefaultContent() {
 // GET - Obtener contenido
 router.get('/', async (req, res) => {
   try {
+    // Verificar si hay una presentación activa
+    const ACTIVE_PRESENTATION_FILE = path.join(STORAGE_PATHS.data(), 'active-presentation.json')
+    const PRESENTATIONS_DIR = STORAGE_PATHS.presentations()
+    
+    let activePresentationId = null
+    try {
+      const activeData = await fs.readFile(ACTIVE_PRESENTATION_FILE, 'utf-8')
+      const activeInfo = JSON.parse(activeData)
+      activePresentationId = activeInfo.id
+    } catch (error) {
+      // No hay presentación activa, usar contenido general
+    }
+    
+    // Si hay una presentación activa, cargarla
+    if (activePresentationId) {
+      try {
+        const presentationPath = path.join(PRESENTATIONS_DIR, `${activePresentationId}.json`)
+        const presentationContent = await fs.readFile(presentationPath, 'utf-8')
+        const presentationData = JSON.parse(presentationContent)
+        
+        if (presentationData.content) {
+          logger.info(`📋 Cargando presentación activa: ${presentationData.name} (${activePresentationId})`)
+          return res.json(presentationData.content)
+        }
+      } catch (error) {
+        logger.warn(`⚠️  Error cargando presentación activa ${activePresentationId}, usando contenido general:`, error.message)
+        // Continuar con contenido general
+      }
+    }
+    
+    // Si no hay presentación activa o falló, usar contenido general
     let content = null
 
     try {
