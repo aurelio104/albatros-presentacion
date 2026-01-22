@@ -353,23 +353,35 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     }}
                   >
-                    {/* Vista previa */}
-                    {attachment.previewUrl && (
-                      <img
-                        src={ensureHttps(attachment.previewUrl)}
-                        alt={attachment.filename}
-                        style={{
-                          width: '100%',
-                          height: '150px',
-                          objectFit: 'cover',
-                          borderRadius: '6px',
-                          marginBottom: '0.75rem',
-                        }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                        }}
-                      />
+                    {/* Vista previa - Siempre mostrar si existe */}
+                    {attachment.previewUrl && attachment.previewUrl !== attachment.url && (
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <img
+                          src={ensureHttps(attachment.previewUrl)}
+                          alt={`Vista previa de ${attachment.filename}`}
+                          style={{
+                            width: '100%',
+                            height: '200px',
+                            objectFit: 'contain',
+                            borderRadius: '6px',
+                            background: '#f5f5f5',
+                            border: '1px solid rgba(0, 0, 0, 0.1)',
+                            padding: '0.5rem',
+                          }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#666',
+                          marginTop: '0.25rem',
+                          textAlign: 'center',
+                        }}>
+                          📄 Vista previa
+                        </div>
+                      </div>
                     )}
                     
                     {/* Información del archivo */}

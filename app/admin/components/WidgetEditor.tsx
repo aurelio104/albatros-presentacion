@@ -472,23 +472,35 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                   }}
                 >
-                  {/* Vista previa */}
-                  {attachment.previewUrl && (
-                    <img
-                      src={ensureHttps(attachment.previewUrl)}
-                      alt={attachment.filename}
-                      style={{
-                        width: '100%',
-                        height: '120px',
-                        objectFit: 'cover',
-                        borderRadius: '6px',
-                        marginBottom: '0.5rem',
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = 'none'
-                      }}
-                    />
+                  {/* Vista previa - Mostrar siempre si existe y es diferente de la URL del archivo */}
+                  {attachment.previewUrl && attachment.previewUrl !== attachment.url && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <img
+                        src={ensureHttps(attachment.previewUrl)}
+                        alt={`Vista previa de ${attachment.filename}`}
+                        style={{
+                          width: '100%',
+                          height: '150px',
+                          objectFit: 'contain',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          padding: '0.25rem',
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                      <div style={{
+                        fontSize: '0.7rem',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        marginTop: '0.25rem',
+                        textAlign: 'center',
+                      }}>
+                        📄 Vista previa
+                      </div>
+                    </div>
                   )}
                   
                   {/* Información del archivo */}

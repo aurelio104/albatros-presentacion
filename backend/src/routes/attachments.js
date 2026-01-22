@@ -29,16 +29,59 @@ function getBackendUrl(req) {
   return 'http://localhost:3001'
 }
 
-// Generar vista previa de PDF (primera página como imagen)
+// Generar vista previa de PDF (primera página como imagen usando LibreOffice)
 async function generatePdfPreview(fileBuffer, filename, req) {
   try {
-    const { createRequire } = await import('module')
-    const require = createRequire(import.meta.url)
-    const pdfParse = require('pdf-parse')
+    const os = await import('os')
+    const tempDir = path.join(os.tmpdir(), `pdf-preview-${Date.now()}`)
+    await fs.mkdir(tempDir, { recursive: true })
     
-    const data = await pdfParse(fileBuffer)
-    // Por ahora, retornar null (se puede implementar con pdf-lib o pdf2pic más adelante)
-    // Para PDFs, podemos usar la primera página como preview
+    const tempPdfPath = path.join(tempDir, 'input.pdf')
+    const tempPngPath = path.join(tempDir, 'input.png')
+    
+    // Guardar PDF temporal
+    await fs.writeFile(tempPdfPath, fileBuffer)
+    
+    // Usar LibreOffice para convertir primera página a PNG
+    const { exec } = await import('child_process')
+    const { promisify } = await import('util')
+    const execAsync = promisify(exec)
+    
+    try {
+      // Convertir PDF a PNG (solo primera página)
+      await execAsync(`libreoffice --headless --convert-to png --outdir "${tempDir}" "${tempPdfPath}"`, {
+        timeout: 30000, // 30 segundos timeout
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      })
+      
+      // Buscar el archivo PNG generado
+      const files = await fs.readdir(tempDir)
+      const pngFile = files.find(f => f.endsWith('.png'))
+      
+      if (pngFile) {
+        const pngPath = path.join(tempDir, pngFile)
+        const pngBuffer = await fs.readFile(pngPath)
+        
+        // Guardar preview en el directorio de imágenes
+        const imagesDir = STORAGE_PATHS.images()
+        await ensureStorageDir(imagesDir)
+        const previewName = `preview-${Date.now()}-${path.basename(filename, path.extname(filename))}.png`
+        const previewPath = path.join(imagesDir, previewName)
+        await fs.writeFile(previewPath, pngBuffer)
+        
+        const backendUrl = getBackendUrl(req)
+        const previewUrl = `${backendUrl}/images/${previewName}`
+        
+        logger.info(`✅ Vista previa de PDF generada: ${previewName}`)
+        return previewUrl
+      }
+    } catch (libreOfficeError) {
+      logger.warn('LibreOffice no disponible para preview de PDF:', libreOfficeError.message)
+    } finally {
+      // Limpiar archivos temporales
+      await fs.rm(tempDir, { recursive: true, force: true })
+    }
+    
     return null
   } catch (error) {
     logger.warn('No se pudo generar preview de PDF:', error.message)
@@ -73,10 +116,64 @@ async function generateWordPreview(fileBuffer, filename, req) {
   }
 }
 
-// Generar vista previa de Excel (primera hoja como imagen - requiere conversión)
+// Generar vista previa de Excel (primera hoja como imagen usando LibreOffice)
 async function generateExcelPreview(fileBuffer, filename, req) {
-  // Por ahora, retornar null (se puede implementar con xlsx y conversión a imagen más adelante)
-  return null
+  try {
+    const os = await import('os')
+    const tempDir = path.join(os.tmpdir(), `excel-preview-${Date.now()}`)
+    await fs.mkdir(tempDir, { recursive: true })
+    
+    const tempXlsxPath = path.join(tempDir, 'input.xlsx')
+    const tempPngPath = path.join(tempDir, 'input.png')
+    
+    // Guardar Excel temporal
+    await fs.writeFile(tempXlsxPath, fileBuffer)
+    
+    // Usar LibreOffice para convertir primera hoja a PNG
+    const { exec } = await import('child_process')
+    const { promisify } = await import('util')
+    const execAsync = promisify(exec)
+    
+    try {
+      // Convertir Excel a PNG (solo primera hoja)
+      await execAsync(`libreoffice --headless --convert-to png --outdir "${tempDir}" "${tempXlsxPath}"`, {
+        timeout: 30000, // 30 segundos timeout
+        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+      })
+      
+      // Buscar el archivo PNG generado
+      const files = await fs.readdir(tempDir)
+      const pngFile = files.find(f => f.endsWith('.png'))
+      
+      if (pngFile) {
+        const pngPath = path.join(tempDir, pngFile)
+        const pngBuffer = await fs.readFile(pngPath)
+        
+        // Guardar preview en el directorio de imágenes
+        const imagesDir = STORAGE_PATHS.images()
+        await ensureStorageDir(imagesDir)
+        const previewName = `preview-${Date.now()}-${path.basename(filename, path.extname(filename))}.png`
+        const previewPath = path.join(imagesDir, previewName)
+        await fs.writeFile(previewPath, pngBuffer)
+        
+        const backendUrl = getBackendUrl(req)
+        const previewUrl = `${backendUrl}/images/${previewName}`
+        
+        logger.info(`✅ Vista previa de Excel generada: ${previewName}`)
+        return previewUrl
+      }
+    } catch (libreOfficeError) {
+      logger.warn('LibreOffice no disponible para preview de Excel:', libreOfficeError.message)
+    } finally {
+      // Limpiar archivos temporales
+      await fs.rm(tempDir, { recursive: true, force: true })
+    }
+    
+    return null
+  } catch (error) {
+    logger.warn('No se pudo generar preview de Excel:', error.message)
+    return null
+  }
 }
 
 // Configurar multer para guardar archivos adjuntos
