@@ -157,9 +157,25 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       {(() => {
         // Modo resumen: mostrar preview (resumen inteligente)
         // Modo completo: mostrar description (contenido completo)
-        const content = (widget.displayMode || 'resumen') === 'completo' 
-          ? widget.content.description || widget.preview
-          : widget.preview || widget.content.description?.substring(0, 200) + '...'
+        let content = ''
+        if ((widget.displayMode || 'resumen') === 'completo') {
+          // Modo completo: mostrar description completa
+          content = widget.content.description || widget.preview || ''
+        } else {
+          // Modo resumen: mostrar preview, pero si está vacío o es solo "...", usar description truncado
+          const preview = widget.preview || ''
+          if (preview.trim() && preview.trim() !== '...' && preview.trim().length > 3) {
+            content = preview
+          } else {
+            // Si no hay preview válido, usar description truncado
+            const description = widget.content.description || ''
+            if (description.length > 200) {
+              content = description.substring(0, 200) + '...'
+            } else {
+              content = description
+            }
+          }
+        }
         
         const hasHTML = content && /<img\s+src=/i.test(content)
         const hasImagesArray = widget.content.images && widget.content.images.length > 0

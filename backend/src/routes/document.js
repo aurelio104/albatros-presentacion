@@ -512,19 +512,21 @@ function extractStructuredSections(fullText, images = []) {
     const titleLevel = detectTitleLevel(line, previousLine, nextLine, i, allLines)
     
     if (titleLevel !== null) {
-      // Guardar sección anterior si existe
-      if (currentSection && (currentContent.length > 0 || currentSection.title)) {
-        // Las imágenes ya están insertadas en el contenido como marcadores HTML
-        // Solo necesitamos preservar el contenido con las imágenes inline
-        // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
-        const preservedContent = currentContent.join('\n')
-        sections.push({
-          ...currentSection,
-          content: preservedContent, // Contenido con imágenes inline como HTML
-          images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
-          level: currentLevel
-        })
-        sectionImageIndex += currentSection.images.length
+      // Guardar sección anterior si existe y tiene contenido o título válido
+      if (currentSection) {
+        // PRESERVAR: unir líneas manteniendo saltos de línea originales
+        const preservedContent = currentContent.join('\n').trim()
+        
+        // Solo guardar sección si tiene contenido o si es la primera sección (para no perder títulos importantes)
+        if (preservedContent.length > 0 || sections.length === 0 || currentSection.title) {
+          sections.push({
+            ...currentSection,
+            content: preservedContent || currentSection.title, // Si no hay contenido, usar al menos el título
+            images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
+            level: currentLevel
+          })
+          sectionImageIndex += currentSection.images.length
+        }
       }
       
       // Crear nueva sección - limpiar título pero preservar estructura importante
@@ -700,15 +702,18 @@ function extractStructuredSections(fullText, images = []) {
   
   // Agregar última sección
   if (currentSection) {
-    // Las imágenes ya están insertadas en el contenido como marcadores HTML
-    // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
-    const preservedContent = currentContent.join('\n')
-    sections.push({
-      ...currentSection,
-      content: preservedContent, // Contenido con imágenes inline como HTML
-      images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
-      level: currentLevel
-    })
+    // PRESERVAR: unir líneas manteniendo saltos de línea originales
+    const preservedContent = currentContent.join('\n').trim()
+    
+    // Solo guardar si tiene contenido o título válido
+    if (preservedContent.length > 0 || currentSection.title) {
+      sections.push({
+        ...currentSection,
+        content: preservedContent || currentSection.title, // Si no hay contenido, usar al menos el título
+        images: currentSection.images, // Mantener referencia a imágenes para compatibilidad
+        level: currentLevel
+      })
+    }
   }
   
   // Si no se detectaron secciones, crear una con todo el contenido PRESERVADO
