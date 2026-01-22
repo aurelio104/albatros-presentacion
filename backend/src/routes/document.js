@@ -1051,7 +1051,9 @@ async function extractImagesFromPptx(fileBuffer, req = null) {
           const backendUrl = getBackendUrl(req)
           const imageUrl = `${backendUrl}/images/${imageName}`
           images.push(imageUrl)
-          logger.debug(`✅ Imagen PPTX extraída y guardada: ${imageName} (${(buffer.length / 1024).toFixed(2)} KB) desde ${entry.entryName}`)
+          logger.info(`✅ Imagen PPTX extraída y guardada: ${imageName} (${(buffer.length / 1024).toFixed(2)} KB) desde ${entry.entryName}`)
+          logger.debug(`   URL: ${imageUrl}`)
+          logger.debug(`   Ruta física: ${imagePath}`)
         } catch (imgError) {
           logger.warn(`⚠️  Error procesando imagen ${entry.entryName}:`, imgError.message)
           // Continuar con la siguiente imagen
@@ -1069,7 +1071,8 @@ async function extractImagesFromPptx(fileBuffer, req = null) {
 // Extraer fondo de una diapositiva específica
 async function extractSlideBackground(zip, slideIndex, slideXml, req = null) {
   try {
-    const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+    const imagesDir = STORAGE_PATHS.images()
+    await ensureStorageDir(imagesDir)
     await fs.mkdir(imagesDir, { recursive: true })
     
     // Buscar fondo en el XML de la diapositiva

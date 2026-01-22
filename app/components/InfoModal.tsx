@@ -320,6 +320,104 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
               <p className="modal-additional-text">{widget.content.additionalInfo}</p>
             </div>
           )}
+
+          {/* Archivos Adjuntos */}
+          {widget.content.attachments && widget.content.attachments.length > 0 && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1.5rem',
+              background: 'rgba(0, 0, 0, 0.05)',
+              borderRadius: '12px',
+            }}>
+              <h3 style={{
+                fontSize: '1.3rem',
+                fontWeight: '600',
+                marginBottom: '1rem',
+                color: '#1a1a1a',
+              }}>
+                📎 Archivos Adjuntos
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '1rem',
+              }}>
+                {widget.content.attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      border: '1px solid rgba(0, 0, 0, 0.1)',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    }}
+                  >
+                    {/* Vista previa */}
+                    {attachment.previewUrl && (
+                      <img
+                        src={ensureHttps(attachment.previewUrl)}
+                        alt={attachment.filename}
+                        style={{
+                          width: '100%',
+                          height: '150px',
+                          objectFit: 'cover',
+                          borderRadius: '6px',
+                          marginBottom: '0.75rem',
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                    )}
+                    
+                    {/* Información del archivo */}
+                    <div style={{
+                      fontSize: '0.9rem',
+                      color: '#333',
+                      wordBreak: 'break-word',
+                      marginBottom: '0.5rem',
+                    }}>
+                      <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                        {attachment.filename}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                        {attachment.type.toUpperCase()}
+                        {attachment.size && ` • ${(attachment.size / 1024).toFixed(1)} KB`}
+                      </div>
+                    </div>
+
+                    {/* Botón descargar */}
+                    <a
+                      href={ensureHttps(attachment.url)}
+                      download={attachment.filename}
+                      style={{
+                        display: 'block',
+                        padding: '0.5rem',
+                        background: 'rgba(59, 130, 246, 0.9)',
+                        color: 'white',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: '500',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 1)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.9)'
+                      }}
+                    >
+                      📥 Descargar
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

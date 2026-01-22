@@ -9,6 +9,7 @@ import uploadRoutes from './routes/upload.js'
 import documentRoutes from './routes/document.js'
 import backupRoutes from './routes/backup.js'
 import presentationsRoutes from './routes/presentations.js'
+import attachmentsRoutes from './routes/attachments.js'
 import { rateLimiter } from './middleware/rateLimiter.js'
 import logger from './utils/logger.js'
 
@@ -79,10 +80,28 @@ async function ensureDirectories() {
 }
 
 // Servir archivos estáticos (imágenes) desde almacenamiento persistente
-app.use('/images', express.static(STORAGE_PATHS.images()))
+app.use('/images', express.static(STORAGE_PATHS.images(), {
+  maxAge: '1y', // Cache por 1 año
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    res.set('X-Content-Type-Options', 'nosniff')
+  }
+}))
 
 // Servir archivos (PDFs, Excel) desde almacenamiento persistente
-app.use('/files', express.static(STORAGE_PATHS.files()))
+app.use('/files', express.static(STORAGE_PATHS.files(), {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    res.set('X-Content-Type-Options', 'nosniff')
+    if (path.endsWith('.pdf')) {
+      res.set('Content-Type', 'application/pdf')
+      res.set('Content-Disposition', 'inline')
+    }
+  }
+}))
 
 // Rutas API
 app.use('/api/content', contentRoutes)
@@ -90,6 +109,7 @@ app.use('/api/upload', uploadRoutes)
 app.use('/api/process-document', documentRoutes)
 app.use('/api/backup', backupRoutes)
 app.use('/api/presentations', presentationsRoutes)
+app.use('/api/attachments', attachmentsRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

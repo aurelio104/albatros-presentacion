@@ -1,8 +1,19 @@
+export interface FileAttachment {
+  id: string
+  url: string
+  previewUrl?: string // URL de vista previa (imagen para PDF, thumbnail para otros)
+  filename: string
+  type: 'word' | 'excel' | 'pdf' | 'image'
+  size?: number
+  uploadedAt?: string
+}
+
 export interface WidgetContent {
   title: string
   description: string
   images: string[]
   additionalInfo?: string
+  attachments?: FileAttachment[] // Archivos adjuntos (Word, Excel, PDF, imágenes)
 }
 
 export interface WidgetAnimation {
