@@ -274,8 +274,8 @@ export default function Home() {
             justifyContent: 'center',
             alignItems: 'center',
             padding: '2rem',
-            paddingTop: '120px',
-            minHeight: 'calc(100vh - 120px)',
+            paddingTop: 'clamp(90px, 15vh, 110px)',
+            minHeight: 'calc(100vh - clamp(90px, 15vh, 110px))',
           }}>
             <div
               style={{

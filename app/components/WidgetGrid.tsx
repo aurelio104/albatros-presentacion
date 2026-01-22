@@ -298,7 +298,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           align-items: center;
           gap: 2rem;
           padding: 2rem;
-          padding-top: 120px;
+          padding-top: clamp(90px, 15vh, 110px);
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
         }
@@ -338,7 +338,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Tablets */
         @media (max-width: 768px) {
           .widget-grid {
-            padding-top: clamp(90px, 15vh, 110px);
+            padding-top: clamp(75px, 12vh, 95px);
             align-items: flex-start;
             justify-content: center;
             padding-bottom: clamp(1rem, 3vh, 2rem);
@@ -355,7 +355,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Small tablets */
         @media (max-width: 640px) {
           .widget-grid {
-            padding-top: clamp(100px, 20vh, 180px);
+            padding-top: clamp(70px, 11vh, 90px);
             justify-content: center;
             gap: clamp(1rem, 2vw, 1.25rem);
             padding-bottom: clamp(1rem, 3vh, 2rem);
@@ -371,7 +371,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Mobile */
         @media (max-width: 480px) {
           .widget-grid {
-            padding-top: clamp(80px, 20vh, 100px);
+            padding-top: clamp(60px, 9vh, 80px);
             justify-content: center;
             align-items: center;
             gap: 1rem;
@@ -393,7 +393,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Very small mobile */
         @media (max-width: 360px) {
           .widget-grid {
-            padding-top: clamp(70px, 18vh, 90px);
+            padding-top: clamp(55px, 8vh, 75px);
             justify-content: center;
             align-items: center;
             gap: 0.75rem;
@@ -414,7 +414,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Landscape mobile */
         @media (max-height: 500px) and (orientation: landscape) {
           .widget-grid {
-            padding-top: 70px;
+            padding-top: clamp(50px, 7vh, 65px);
             align-items: flex-start;
             justify-content: center;
             padding-bottom: 1rem;

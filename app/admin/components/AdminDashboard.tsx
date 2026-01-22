@@ -455,7 +455,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         minHeight: '100vh',
         overflow: 'hidden',
         padding: '2rem',
-        paddingTop: '120px',
+        paddingTop: 'clamp(90px, 15vh, 110px)',
       }}>
         <VideoBackground 
           videoSrc={content.settings.videoBackground || '/videos/video1.MP4'}
