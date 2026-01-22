@@ -10,6 +10,7 @@ import documentRoutes from './routes/document.js'
 import backupRoutes from './routes/backup.js'
 import presentationsRoutes from './routes/presentations.js'
 import attachmentsRoutes from './routes/attachments.js'
+import verifyRoutes from './routes/verify.js'
 import { rateLimiter } from './middleware/rateLimiter.js'
 import logger from './utils/logger.js'
 
@@ -110,6 +111,7 @@ app.use('/api/process-document', documentRoutes)
 app.use('/api/backup', backupRoutes)
 app.use('/api/presentations', presentationsRoutes)
 app.use('/api/attachments', attachmentsRoutes)
+app.use('/api/verify', verifyRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
