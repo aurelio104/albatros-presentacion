@@ -527,12 +527,21 @@ function extractStructuredSections(fullText, images = []) {
         sectionImageIndex += currentSection.images.length
       }
       
-      // Crear nueva sección - limpiar título pero preservar estructura
-      const cleanTitle = line
-        .replace(/^##?\s+/, '') // Markdown
-        .replace(/^[\d•\-\*IVX\.\)\s]+/, '') // Números/viñetas
-        .replace(/:$/, '') // Dos puntos finales
-        .trim()
+      // Crear nueva sección - limpiar título pero preservar estructura importante
+      let cleanTitle = line.trim()
+      
+      // Si es "Capítulo X" o "Anexo X", mantenerlo completo
+      if (/^(CAPÍTULO|CAPITULO|ANEXO)\s+\d+/i.test(cleanTitle)) {
+        // Mantener "Capítulo X. Título" completo, solo quitar dos puntos finales si existen
+        cleanTitle = cleanTitle.replace(/:$/, '').trim()
+      } else {
+        // Para otros títulos, limpiar formato pero mantener contenido
+        cleanTitle = cleanTitle
+          .replace(/^##?\s+/, '') // Markdown
+          .replace(/^[\d•\-\*IVX\.\)\s]+/, '') // Números/viñetas al inicio (pero no "Capítulo X")
+          .replace(/:$/, '') // Dos puntos finales
+          .trim()
+      }
       
       currentSection = {
         title: cleanTitle || `Sección ${sections.length + 1}`,
