@@ -175,7 +175,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                 }}>
                   <input
                     type="checkbox"
-                    checked={editedWidget.displayMode === 'resumen'}
+                    checked={(editedWidget.displayMode || 'resumen') === 'resumen'}
                     onChange={(e) => {
                       handleChange('displayMode', e.target.checked ? 'resumen' : 'completo')
                     }}
@@ -194,7 +194,7 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   margin: 0,
                   flex: 1
                 }}>
-                  {editedWidget.displayMode === 'resumen' 
+                  {(editedWidget.displayMode || 'resumen') === 'resumen' 
                     ? '✅ Mostrando preview corto en la tarjeta'
                     : '✅ Mostrando descripción completa en la tarjeta'}
                 </p>

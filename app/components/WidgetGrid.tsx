@@ -155,13 +155,26 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       </h2>
       {/* Helper para detectar si el contenido tiene HTML (imágenes) */}
       {(() => {
-        const content = widget.displayMode === 'completo' 
+        const content = (widget.displayMode || 'resumen') === 'completo' 
           ? widget.content.description || widget.preview
           : widget.preview
         
         const hasHTML = content && /<img\s+src=/i.test(content)
+        const hasImagesArray = widget.content.images && widget.content.images.length > 0
         
-        if (hasHTML) {
+        // Si hay imágenes en el array pero no en el HTML, agregarlas al final del contenido
+        let finalContent = content || ''
+        if (hasImagesArray && !hasHTML && (widget.displayMode || 'resumen') === 'completo') {
+          const imagesHTML = widget.content.images.map((img: string) => {
+            const httpsSrc = ensureHttps(img)
+            return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
+          }).join('')
+          finalContent = finalContent + (finalContent ? '\n\n' : '') + imagesHTML
+        }
+        
+        const finalHasHTML = finalContent && /<img\s+src=/i.test(finalContent)
+        
+        if (finalHasHTML) {
           // Renderizar como HTML para mostrar imágenes
           return (
             <div
@@ -175,12 +188,12 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word',
                 hyphens: 'auto',
-                maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
-                overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
-                textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
+                maxHeight: (widget.displayMode || 'resumen') === 'resumen' ? '150px' : 'none',
+                overflow: (widget.displayMode || 'resumen') === 'resumen' ? 'hidden' : 'visible',
+                textOverflow: (widget.displayMode || 'resumen') === 'resumen' ? 'ellipsis' : 'clip',
               }}
               dangerouslySetInnerHTML={{
-                __html: content
+                __html: finalContent
                   .replace(/\n\n/g, '<br><br>')
                   .replace(/\n/g, '<br>')
                   .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
@@ -204,12 +217,12 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
                 wordBreak: 'break-word',
                 hyphens: 'auto',
                 whiteSpace: 'pre-wrap', // PRESERVAR: espacios, saltos de línea, formato original
-                maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
-                overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
-                textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
+                maxHeight: (widget.displayMode || 'resumen') === 'resumen' ? '150px' : 'none',
+                overflow: (widget.displayMode || 'resumen') === 'resumen' ? 'hidden' : 'visible',
+                textOverflow: (widget.displayMode || 'resumen') === 'resumen' ? 'ellipsis' : 'clip',
               }}
             >
-              {content}
+              {finalContent}
             </p>
           )
         }

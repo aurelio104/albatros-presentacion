@@ -264,18 +264,35 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           <h1 className="modal-title">{widget.title}</h1>
 
           {/* Renderizar descripción con imágenes inline si están en HTML */}
-          <div 
-            className="modal-description"
-            dangerouslySetInnerHTML={{
-              __html: (widget.content.description || widget.preview || '')
-                .replace(/\n\n/g, '<br><br>') // Dobles saltos de línea
-                .replace(/\n/g, '<br>') // Saltos de línea simples
-                .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
-                  const httpsSrc = ensureHttps(src)
-                  return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.style.display='none'" />`
-                })
-            }}
-          />
+          {(() => {
+            let content = widget.content.description || widget.preview || ''
+            const hasHTML = content && /<img\s+src=/i.test(content)
+            const hasImagesArray = widget.content.images && widget.content.images.length > 0
+            
+            // Si hay imágenes en el array pero no en el HTML, agregarlas al final
+            if (hasImagesArray && !hasHTML) {
+              const imagesHTML = widget.content.images.map((img: string) => {
+                const httpsSrc = ensureHttps(img)
+                return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.style.display='none'" />`
+              }).join('')
+              content = content + (content ? '\n\n' : '') + imagesHTML
+            }
+            
+            return (
+              <div 
+                className="modal-description"
+                dangerouslySetInnerHTML={{
+                  __html: content
+                    .replace(/\n\n/g, '<br><br>') // Dobles saltos de línea
+                    .replace(/\n/g, '<br>') // Saltos de línea simples
+                    .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
+                      const httpsSrc = ensureHttps(src)
+                      return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.style.display='none'" />`
+                    })
+                }}
+              />
+            )
+          })()}
 
           {widget.content.additionalInfo && (
             <div className="modal-additional">

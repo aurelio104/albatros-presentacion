@@ -224,7 +224,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               style={{
                 display: 'inline-block',
                 padding: '0.25rem 0.75rem',
-                background: editedWidget.displayMode === 'completo' 
+                background: (editedWidget.displayMode || 'resumen') === 'completo' 
                   ? 'rgba(34, 197, 94, 0.8)' 
                   : 'rgba(251, 146, 60, 0.8)',
                 color: '#ffffff',
@@ -233,7 +233,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                 fontWeight: '600',
               }}
             >
-              {editedWidget.displayMode === 'completo' ? '📋 Completo' : '📄 Resumen'}
+              {(editedWidget.displayMode || 'resumen') === 'completo' ? '📋 Completo' : '📄 Resumen'}
             </div>
           </div>
 
@@ -263,7 +263,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               marginBottom: '1rem',
             }}
           >
-            {editedWidget.displayMode === 'completo' ? (
+            {(editedWidget.displayMode || 'resumen') === 'completo' ? (
               <div
                 dangerouslySetInnerHTML={{
                   __html: editedWidget.content.description
@@ -464,7 +464,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               }}>
                 <input
                   type="checkbox"
-                  checked={editedWidget.displayMode === 'resumen'}
+                  checked={(editedWidget.displayMode || 'resumen') === 'resumen'}
                   onChange={(e) => {
                     handleChange('displayMode', e.target.checked ? 'resumen' : 'completo')
                   }}
@@ -483,7 +483,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                 margin: 0,
                 flex: 1
               }}>
-                {editedWidget.displayMode === 'resumen' 
+                {(editedWidget.displayMode || 'resumen') === 'resumen' 
                   ? '✅ Mostrando preview corto en la tarjeta'
                   : '✅ Mostrando descripción completa en la tarjeta'}
               </p>
