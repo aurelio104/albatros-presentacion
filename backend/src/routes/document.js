@@ -553,9 +553,10 @@ function extractStructuredSections(fullText, images = []) {
       currentContent = [] // Reiniciar con array vacío
     } else if (currentSection) {
       // Agregar contenido a la sección actual - PRESERVAR línea original
-      currentContent.push(originalLine) // Guardar línea original completa primero
+      // IMPORTANTE: Agregar TODAS las líneas que no son títulos al contenido
+      currentContent.push(originalLine) // Siempre agregar la línea (incluso si está vacía)
       
-      // Detectar referencias precisas a imágenes en esta línea
+      // Detectar referencias precisas a imágenes en esta línea (solo si la línea tiene contenido)
       const lineLower = line.toLowerCase()
       const imageReferences = []
       
@@ -681,34 +682,19 @@ function extractStructuredSections(fullText, images = []) {
           currentContent[currentContent.length - 1] = modifiedLine
         }
       }
-    } else if (line.length > 50) {
-      // Si no hay sección actual pero hay contenido, crear una
-      currentSection = {
-        title: 'Introducción',
-        content: originalLine, // Preservar línea original
-        images: [],
-        level: 1
-      }
-      currentContent = [originalLine] // Inicializar con la línea original
-    } else if (originalLine.length > 0) {
-      // Líneas que no son títulos pero tienen contenido - agregar a contenido previo o crear sección
-      if (currentSection) {
-        currentContent.push(originalLine) // Preservar línea original
-      } else {
-        // Crear sección para contenido suelto
+    } else {
+      // Si no hay sección actual, crear una para contenido suelto
+      if (!currentSection) {
         currentSection = {
           title: 'Introducción',
           content: '',
           images: [],
           level: 1
         }
-        currentContent = [originalLine] // Preservar línea original
+        currentContent = []
       }
-    } else {
-      // Línea vacía - PRESERVAR para mantener estructura
-      if (currentSection) {
-        currentContent.push(originalLine) // Preservar línea vacía para mantener saltos de línea
-      }
+      // Agregar línea al contenido (incluso si está vacía para preservar estructura)
+      currentContent.push(originalLine)
     }
   }
   
