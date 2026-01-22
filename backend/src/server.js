@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import contentRoutes from './routes/content.js'
 import uploadRoutes from './routes/upload.js'
 import documentRoutes from './routes/document.js'
+import backupRoutes from './routes/backup.js'
 import { rateLimiter } from './middleware/rateLimiter.js'
 import logger from './utils/logger.js'
 
@@ -84,6 +85,7 @@ app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')
 app.use('/api/content', contentRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/process-document', documentRoutes)
+app.use('/api/backup', backupRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

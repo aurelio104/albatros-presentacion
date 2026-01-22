@@ -72,6 +72,40 @@ router.post('/', async (req, res) => {
     // Asegurar que el directorio existe
     await fs.mkdir(path.dirname(CONTENT_FILE), { recursive: true })
 
+    // Crear backup automático antes de guardar
+    const backupsDir = path.join(__dirname, '..', '..', 'data', 'backups')
+    try {
+      await fs.mkdir(backupsDir, { recursive: true })
+      
+      // Leer contenido actual si existe
+      let currentContent = null
+      try {
+        const currentData = await fs.readFile(CONTENT_FILE, 'utf-8')
+        currentContent = JSON.parse(currentData)
+      } catch (error) {
+        // No hay contenido previo, es la primera vez
+      }
+      
+      // Solo crear backup si hay contenido previo
+      if (currentContent) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+        const backupFilename = `content-backup-${timestamp}.json`
+        const backupPath = path.join(backupsDir, backupFilename)
+        
+        const backupData = {
+          timestamp: new Date().toISOString(),
+          version: '1.0',
+          content: currentContent
+        }
+        
+        await fs.writeFile(backupPath, JSON.stringify(backupData, null, 2), 'utf-8')
+        logger.debug(`✅ Backup automático creado: ${backupFilename}`)
+      }
+    } catch (backupError) {
+      // No fallar si el backup falla, solo loguear
+      logger.warn('⚠️  No se pudo crear backup automático:', backupError.message)
+    }
+
     // Guardar contenido
     await fs.writeFile(CONTENT_FILE, JSON.stringify(body, null, 2), 'utf-8')
     
