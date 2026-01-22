@@ -552,48 +552,114 @@ function extractStructuredSections(fullText, images = []) {
           })
         })
         
-        // Patrón 2: "ver imagen", "imagen siguiente", "imagen adjunta"
-        const contextualPattern = new RegExp(`(?:ver\\s+)?${keyword}\\s+(?:siguiente|adjunta|mostrada|incluida|en\\s+la\\s+siguiente)`, 'gi')
-        const contextualMatches = [...lineLower.matchAll(contextualPattern)]
-        contextualMatches.forEach(match => {
-          imageReferences.push({
-            type: 'contextual',
-            position: (match.index || 0) + currentContent.length,
-            keyword: match[0]
+        // Patrón 2: Referencias contextuales más complejas
+        const contextualPatterns = [
+          new RegExp(`(?:en|de)\\s+la\\s+${keyword}\\s+(?:siguiente|adjunta|mostrada|incluida)`, 'gi'), // "en la imagen siguiente"
+          new RegExp(`${keyword}\\s+(?:siguiente|adjunta|mostrada|incluida|arriba|abajo)`, 'gi'), // "imagen siguiente"
+          new RegExp(`(?:ver|ver\\s+la|ver\\s+el|ver\\s+en)\\s+${keyword}`, 'gi'), // "ver imagen"
+          new RegExp(`(?:se\\s+puede\\s+ver|se\\s+muestra|se\\s+observa|se\\s+determina)\\s+(?:en|en\\s+la)\\s+${keyword}`, 'gi'), // "se puede ver en la imagen"
+          new RegExp(`${keyword}\\s+(?:se\\s+muestra|se\\s+observa|se\\s+puede\\s+ver)`, 'gi'), // "imagen se muestra"
+        ]
+        
+        contextualPatterns.forEach((pattern, patternIdx) => {
+          const contextualMatches = [...lineLower.matchAll(pattern)]
+          contextualMatches.forEach(match => {
+            imageReferences.push({
+              type: 'contextual',
+              position: match.index || 0,
+              keyword: match[0],
+              patternPriority: patternIdx // Prioridad del patrón (más específico primero)
+            })
           })
         })
       })
       
-      // Si hay referencias, insertar imágenes en el orden correcto
+      // Si hay referencias, insertar imágenes en el orden correcto y posición exacta
       if (imageReferences.length > 0 && images.length > 0) {
-        // Ordenar referencias por posición en el texto
-        imageReferences.sort((a, b) => a.position - b.position)
+        // Ordenar referencias: primero por posición, luego por prioridad del patrón
+        imageReferences.sort((a, b) => {
+          if (a.position !== b.position) {
+            return a.position - b.position // Primero por posición
+          }
+          return (a.patternPriority || 999) - (b.patternPriority || 999) // Luego por prioridad
+        })
         
-        imageReferences.forEach(ref => {
+        // Procesar referencias en orden inverso para insertar desde el final hacia el inicio
+        // Esto evita problemas con índices al modificar la línea
+        const sortedRefs = [...imageReferences].reverse()
+        
+        let modifiedLine = originalLine
+        
+        sortedRefs.forEach(ref => {
           let imageToInsert = null
           
           if (ref.type === 'numbered' && ref.number) {
-            // Usar el número exacto de la referencia (1-based a 0-based)
+            // Referencia numerada: usar el número exacto (1-based a 0-based)
             const imageIndex = ref.number - 1
             if (imageIndex >= 0 && imageIndex < images.length) {
               imageToInsert = images[imageIndex]
+              logger.debug(`📍 Referencia numerada: "${ref.keyword}" → Imagen ${ref.number} (índice ${imageIndex})`)
             }
           } else if (ref.type === 'contextual') {
-            // Para referencias contextuales, usar la siguiente imagen disponible
-            imageToInsert = images.find(img => 
-              !usedImages.has(img) && !currentSection.images.includes(img)
-            )
+            // Referencia contextual: usar la siguiente imagen disponible en orden secuencial
+            // Buscar desde el índice actual de la sección para mantener orden
+            let searchIndex = sectionImageIndex
+            let found = false
+            
+            // Buscar desde índice actual
+            while (searchIndex < images.length && !found) {
+              if (!usedImages.has(images[searchIndex]) && !currentSection.images.includes(images[searchIndex])) {
+                imageToInsert = images[searchIndex]
+                found = true
+                logger.debug(`📍 Referencia contextual: "${ref.keyword}" → Imagen siguiente (índice ${searchIndex})`)
+              }
+              searchIndex++
+            }
+            
+            // Si no se encontró, buscar desde el inicio
+            if (!found) {
+              for (let i = 0; i < images.length && !found; i++) {
+                if (!usedImages.has(images[i]) && !currentSection.images.includes(images[i])) {
+                  imageToInsert = images[i]
+                  found = true
+                  logger.debug(`📍 Referencia contextual: "${ref.keyword}" → Imagen siguiente (índice ${i}, desde inicio)`)
+                }
+              }
+            }
           }
           
           // Insertar imagen si se encontró una y no está ya usada
           if (imageToInsert && !usedImages.has(imageToInsert)) {
-            // Insertar imagen justo después de la línea actual
-            currentContent.push('\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n')
+            // Encontrar la posición exacta de la referencia en la línea original
+            const refPosition = originalLine.toLowerCase().indexOf(ref.keyword.toLowerCase(), ref.position)
+            
+            if (refPosition !== -1) {
+              // Insertar imagen justo después de la referencia en la línea
+              const beforeRef = originalLine.substring(0, refPosition + ref.keyword.length)
+              const afterRef = originalLine.substring(refPosition + ref.keyword.length)
+              
+              // Insertar imagen después de la referencia, con espacios apropiados
+              modifiedLine = beforeRef + '\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n' + afterRef
+              
+              // Actualizar originalLine para la siguiente referencia en la misma línea
+              originalLine = modifiedLine
+            } else {
+              // Si no se encuentra la referencia exacta, insertar al final de la línea
+              modifiedLine = originalLine + '\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n'
+              originalLine = modifiedLine
+            }
+            
             currentSection.images.push(imageToInsert)
             usedImages.add(imageToInsert)
             sectionImageIndex++
+            logger.debug(`✅ Imagen insertada inline después de: "${ref.keyword}"`)
           }
         })
+        
+        // Actualizar la última línea del contenido con las imágenes insertadas
+        if (modifiedLine !== originalLine) {
+          currentContent[currentContent.length - 1] = modifiedLine
+        }
       }
     } else if (line.length > 50) {
       // Si no hay sección actual pero hay contenido, crear una

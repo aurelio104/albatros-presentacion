@@ -267,7 +267,8 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               <div
                 dangerouslySetInnerHTML={{
                   __html: editedWidget.content.description
-                    .replace(/\n/g, '<br>')
+                    .replace(/\n\n/g, '<br><br>') // Dobles saltos de línea
+                    .replace(/\n/g, '<br>') // Saltos de línea simples
                     .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
                       const httpsSrc = ensureHttps(src)
                       return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
