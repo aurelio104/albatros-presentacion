@@ -1136,46 +1136,32 @@ async function renderAllSlidesAsImages(fileBuffer, req = null) {
       
       const backendUrl = getBackendUrl(req)
       
-      // Usar un objeto para mapear número de diapositiva a URL de imagen
-      // Esto asegura que diapositiva 1 → imagen 1, diapositiva 2 → imagen 2, etc.
-      const slideImagesMap = {}
-      
-      for (const pngFile of pngFiles) {
+      // CRÍTICO: Agregar las imágenes al array en el orden en que aparecen los archivos PNG ordenados
+      // El orden de los archivos PNG debe corresponder exactamente al orden de las diapositivas en el documento
+      // Índice 0 = Primera diapositiva, Índice 1 = Segunda diapositiva, etc.
+      // NO usar el número en el nombre del archivo, usar la posición en el array ordenado
+      for (let i = 0; i < pngFiles.length; i++) {
+        const pngFile = pngFiles[i]
         const sourcePath = path.join(tempOutputDir, pngFile)
         
-        // Extraer número de diapositiva del nombre del archivo
-        // LibreOffice genera: presentation.1.png, presentation.2.png, etc.
-        const slideNumberMatch = pngFile.match(/\.(\d+)\.png$/)
-        if (!slideNumberMatch) {
-          logger.warn(`⚠️  No se pudo extraer número de diapositiva del archivo: ${pngFile}`)
-          continue
-        }
-        
-        const slideNumber = parseInt(slideNumberMatch[1])
+        // El número de diapositiva es la posición en el array (i + 1)
+        // Primera imagen en el array ordenado = Diapositiva 1, Segunda = Diapositiva 2, etc.
+        const slideNumber = i + 1
         const imageName = `pptx-full-${Date.now()}-slide${slideNumber}.png`
         const finalImagePath = path.join(imagesDir, imageName)
         
         try {
           await fs.copyFile(sourcePath, finalImagePath)
           const imageUrl = `${backendUrl}/images/${imageName}`
-          slideImagesMap[slideNumber] = imageUrl // Mapear número de diapositiva a URL
-          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
+          slideImages.push(imageUrl) // Agregar en orden secuencial al array
+          logger.debug(`✅ Imagen ${i + 1} (archivo: ${pngFile}) → Diapositiva ${slideNumber} → Array índice ${i}: ${imageName}`)
         } catch (copyError) {
-          logger.debug(`⚠️  Error copiando imagen de diapositiva ${slideNumber}:`, copyError.message)
+          logger.debug(`⚠️  Error copiando imagen ${i + 1}:`, copyError.message)
+          slideImages.push(null) // Agregar null para mantener el orden del array
         }
       }
       
-      // Convertir el mapa a un array ordenado (índice 0 = diapositiva 1, índice 1 = diapositiva 2, etc.)
-      const maxSlideNumber = Math.max(...Object.keys(slideImagesMap).map(Number), 0)
-      for (let i = 1; i <= maxSlideNumber; i++) {
-        if (slideImagesMap[i]) {
-          slideImages.push(slideImagesMap[i])
-        } else {
-          // Si falta una diapositiva, agregar null para mantener el orden
-          slideImages.push(null)
-          logger.warn(`⚠️  Falta imagen para diapositiva ${i}`)
-        }
-      }
+      logger.debug(`📋 Total de imágenes renderizadas: ${slideImages.length}. Orden: ${slideImages.map((img, idx) => img ? `[${idx}]=slide${idx + 1}` : `[${idx}]=null`).join(', ')}`)
       
     } catch (libreOfficeError) {
       // LibreOffice no está disponible o falló, continuar sin renderizado completo
