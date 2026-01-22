@@ -84,11 +84,18 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         .widget-content img {
           max-width: 100%;
           height: auto;
-          margin: 0.5rem 0;
-          border-radius: 8px;
+          margin: clamp(0.25rem, 1vw, 0.5rem) 0;
+          border-radius: clamp(6px, 1.5vw, 8px);
           display: block;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          border: clamp(1px, 0.3vw, 2px) solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 clamp(2px, 0.8vw, 4px) clamp(6px, 2vw, 12px) rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 480px) {
+          .widget-content img {
+            margin: 0.5rem 0;
+            border-radius: 8px;
+          }
         }
       `}</style>
       <div
@@ -114,7 +121,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         WebkitBackdropFilter: (defaultStyle.fullPageImage || defaultStyle.backgroundImage) ? 'none' : 'blur(10px)',
         border: `1px solid ${defaultStyle.borderColor || 'rgba(255, 255, 255, 0.2)'}`,
         borderRadius: defaultStyle.borderRadius ? `${defaultStyle.borderRadius}px` : '16px',
-        padding: '2rem',
+        padding: 'clamp(1rem, 3vw, 2rem)',
         minWidth: '280px',
         maxWidth: '320px',
         width: '100%',
@@ -328,38 +335,40 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Tablets */
         @media (max-width: 768px) {
           .widget-grid {
-            padding-top: 100px;
+            padding-top: clamp(90px, 15vh, 110px);
             align-items: flex-start;
-            padding-bottom: 2rem;
-            gap: 1.5rem;
+            padding-bottom: clamp(1rem, 3vh, 2rem);
+            gap: clamp(1rem, 2vw, 1.5rem);
           }
           .widget-item {
-            min-width: calc(50% - 0.75rem);
-            max-width: calc(50% - 0.75rem);
-            width: calc(50% - 0.75rem);
+            min-width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
+            max-width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
+            width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
           }
         }
 
         /* Small tablets */
         @media (max-width: 640px) {
           .widget-grid {
-            padding-top: 180px;
-            gap: 1.25rem;
+            padding-top: clamp(100px, 20vh, 180px);
+            gap: clamp(1rem, 2vw, 1.25rem);
+            padding-bottom: clamp(1rem, 3vh, 2rem);
           }
           .widget-item {
-            min-width: calc(50% - 0.625rem);
-            max-width: calc(50% - 0.625rem);
-            width: calc(50% - 0.625rem);
+            min-width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
+            max-width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
+            width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
           }
         }
 
         /* Mobile */
         @media (max-width: 480px) {
           .widget-grid {
-            padding-top: 90px;
+            padding-top: clamp(80px, 20vh, 100px);
             gap: 1rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-left: clamp(0.75rem, 3vw, 1rem);
+            padding-right: clamp(0.75rem, 3vw, 1rem);
+            padding-bottom: clamp(1rem, 4vh, 2rem);
           }
           .widget-item {
             min-width: 100%;
@@ -371,10 +380,16 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         /* Very small mobile */
         @media (max-width: 360px) {
           .widget-grid {
-            padding-top: 80px;
+            padding-top: clamp(70px, 18vh, 90px);
             gap: 0.75rem;
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
+            padding-left: clamp(0.5rem, 2vw, 0.75rem);
+            padding-right: clamp(0.5rem, 2vw, 0.75rem);
+            padding-bottom: clamp(0.75rem, 3vh, 1.5rem);
+          }
+          .widget-item {
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
           }
         }
 

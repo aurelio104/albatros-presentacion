@@ -168,16 +168,23 @@ export default function Home() {
 
         main {
           position: relative;
-          width: 100vw;
+          width: 100%;
+          min-width: 100vw;
           height: 100vh;
-          overflow: hidden;
+          min-height: 100vh;
+          overflow-x: hidden;
+          overflow-y: auto;
           -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
         }
 
         @media (max-width: 768px) {
           main {
             height: 100vh;
             height: -webkit-fill-available;
+            min-height: -webkit-fill-available;
+            overflow-y: auto;
+            overflow-x: hidden;
           }
         }
 
@@ -185,6 +192,14 @@ export default function Home() {
           main {
             height: auto;
             min-height: 100vh;
+            overflow-y: auto;
+          }
+        }
+        
+        /* Prevenir zoom en iOS al hacer doble tap */
+        @media (max-width: 768px) {
+          * {
+            touch-action: manipulation;
           }
         }
       `}</style>

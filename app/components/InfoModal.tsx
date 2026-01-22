@@ -202,72 +202,100 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
 
         @media (max-width: 768px) {
           .modal-overlay {
-            padding: 0.5rem;
+            padding: clamp(0.25rem, 1vw, 0.5rem);
           }
 
           .modal-content {
-            padding: 2rem 1.5rem;
-            border-radius: 16px;
+            padding: clamp(1.5rem, 4vw, 2rem) clamp(1rem, 3vw, 1.5rem);
+            border-radius: clamp(14px, 3vw, 16px);
             max-height: 95vh;
+            max-width: calc(100vw - 1rem);
           }
 
           .modal-close {
-            top: 0.75rem;
-            right: 0.75rem;
-            width: 36px;
-            height: 36px;
-            font-size: 1.3rem;
+            top: clamp(0.5rem, 1.5vw, 0.75rem);
+            right: clamp(0.5rem, 1.5vw, 0.75rem);
+            width: clamp(32px, 8vw, 36px);
+            height: clamp(32px, 8vw, 36px);
+            font-size: clamp(1.1rem, 3vw, 1.3rem);
           }
 
           .modal-title {
-            font-size: 1.75rem;
-            margin-bottom: 1rem;
-            padding-right: 2.5rem;
+            font-size: clamp(1.5rem, 5vw, 1.75rem);
+            margin-bottom: clamp(0.75rem, 2vh, 1rem);
+            padding-right: clamp(2rem, 5vw, 2.5rem);
           }
 
           .modal-description {
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 3.5vw, 1rem);
             line-height: 1.6;
-            margin-bottom: 1.5rem;
+            margin-bottom: clamp(1rem, 2vh, 1.5rem);
           }
 
           .modal-images {
             grid-template-columns: 1fr;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            gap: clamp(0.5rem, 1.5vw, 0.75rem);
+            margin-bottom: clamp(1rem, 2vh, 1.5rem);
           }
 
           .modal-image {
-            height: 180px;
+            height: clamp(150px, 25vh, 180px);
           }
 
           .modal-additional {
-            padding: 1rem;
-            margin-top: 1.5rem;
+            padding: clamp(0.75rem, 2vw, 1rem);
+            margin-top: clamp(1rem, 2vh, 1.5rem);
           }
 
           .modal-additional-text {
-            font-size: 0.9rem;
+            font-size: clamp(0.85rem, 3vw, 0.9rem);
           }
         }
 
         @media (max-width: 480px) {
           .modal-content {
-            padding: 1.5rem 1rem;
-            border-radius: 12px;
+            padding: clamp(1rem, 3vw, 1.5rem) clamp(0.75rem, 2vw, 1rem);
+            border-radius: clamp(10px, 2.5vw, 12px);
+            max-width: calc(100vw - 1rem);
+            margin: 0.5rem;
           }
 
           .modal-title {
-            font-size: 1.5rem;
-            padding-right: 2rem;
+            font-size: clamp(1.25rem, 5vw, 1.5rem);
+            padding-right: clamp(1.5rem, 4vw, 2rem);
+            margin-bottom: clamp(0.75rem, 2vh, 1rem);
           }
 
           .modal-description {
-            font-size: 0.95rem;
+            font-size: clamp(0.875rem, 3.5vw, 0.95rem);
+            line-height: 1.5;
           }
 
           .modal-image {
-            height: 150px;
+            height: clamp(120px, 30vh, 150px);
+          }
+          
+          .modal-additional {
+            padding: clamp(0.75rem, 2vw, 1rem);
+            margin-top: clamp(1rem, 2vh, 1.5rem);
+          }
+        }
+        
+        @media (max-width: 360px) {
+          .modal-content {
+            padding: 1rem 0.75rem;
+            border-radius: 10px;
+            max-width: calc(100vw - 0.5rem);
+            margin: 0.25rem;
+          }
+
+          .modal-title {
+            font-size: clamp(1.1rem, 6vw, 1.3rem);
+            padding-right: 1.5rem;
+          }
+
+          .modal-description {
+            font-size: clamp(0.8rem, 4vw, 0.9rem);
           }
         }
 
