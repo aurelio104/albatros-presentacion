@@ -359,6 +359,12 @@ async function extractStructuredContentFromWord(fileBuffer, req = null) {
     // Extraer secciones con imágenes insertadas inline donde se mencionen
     const result = extractStructuredSections(fullText, allImages)
     
+    // Agregar número de sección a cada sección para mantener orden (Word)
+    result.sections = result.sections.map((section, index) => ({
+      ...section,
+      sectionNumber: index + 1 // Número de sección (1-based) para mantener orden
+    }))
+    
     logger.debug(`📊 Secciones extraídas: ${result.sections.length}, Imágenes totales: ${allImages.length}`)
     
     return result
@@ -922,6 +928,13 @@ async function extractFromPDF(fileBuffer, req = null) {
     // Extraer secciones con asociación inteligente de imágenes
     const result = extractStructuredSections(fullText, extractedImages)
     
+    // Agregar número de página a cada sección para mantener orden (PDF)
+    // Las secciones se crean en el orden en que aparecen en el documento
+    result.sections = result.sections.map((section, index) => ({
+      ...section,
+      pageNumber: index + 1 // Número de sección/página (1-based) para mantener orden
+    }))
+    
     // Asegurar que las imágenes extraídas estén en allImages
     result.allImages = extractedImages
     
@@ -1319,7 +1332,8 @@ async function extractFromExcel(fileBuffer) {
             title,
             content,
             images: [],
-            level: 1
+            level: 1,
+            sheetNumber: sheetIdx + 1 // Número de hoja (1-based) para mantener orden
           })
         }
       }
