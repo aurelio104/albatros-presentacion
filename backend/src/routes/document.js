@@ -1161,7 +1161,11 @@ async function renderAllSlidesAsImages(fileBuffer, req = null) {
         }
       }
       
-      logger.debug(`📋 Total de imágenes renderizadas: ${slideImages.length}. Orden: ${slideImages.map((img, idx) => img ? `[${idx}]=slide${idx + 1}` : `[${idx}]=null`).join(', ')}`)
+      logger.debug(`📋 Total de imágenes renderizadas: ${slideImages.length}`)
+      slideImages.forEach((img, idx) => {
+        const fileName = img ? img.substring(img.lastIndexOf('/') + 1) : 'null'
+        logger.debug(`   Array[${idx}] → Diapositiva ${idx + 1} → ${fileName}`)
+      })
       
     } catch (libreOfficeError) {
       // LibreOffice no está disponible o falló, continuar sin renderizado completo
