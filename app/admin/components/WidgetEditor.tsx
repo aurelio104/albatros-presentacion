@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { WidgetData, WidgetCategory } from '@/app/types'
+import { WidgetData, WidgetCategory, FileAttachment } from '@/app/types'
 import ImageUploader from './ImageUploader'
+import { ensureHttps } from '@/app/utils/imageUrl'
 
 const inputStyle = {
   width: '100%',
