@@ -516,7 +516,9 @@ function extractStructuredSections(fullText, images = []) {
     // Detectar si es un título y su nivel (usando línea procesada para análisis)
     const titleLevel = detectTitleLevel(line, previousLine, nextLine, i, allLines)
     
-    if (titleLevel !== null) {
+    // Si es un título principal (nivel 1), crear nueva sección
+    // Si es subtítulo (nivel 2 o 3), agregarlo al contenido de la sección actual
+    if (titleLevel === 1) {
       // Guardar sección anterior si existe y tiene contenido o título válido
       if (currentSection) {
         // PRESERVAR: unir líneas manteniendo saltos de línea originales
@@ -558,6 +560,12 @@ function extractStructuredSections(fullText, images = []) {
       }
       currentLevel = titleLevel
       currentContent = [] // Reiniciar con array vacío
+    } else if (titleLevel === 2 || titleLevel === 3) {
+      // Subtítulos (nivel 2 o 3): agregar al contenido de la sección actual como parte del texto
+      // Preservar formato del subtítulo en el contenido
+      if (currentSection) {
+        currentContent.push(originalLine) // Agregar el subtítulo como parte del contenido
+      }
     } else if (currentSection) {
       // Agregar contenido a la sección actual - PRESERVAR línea original
       // IMPORTANTE: Agregar TODAS las líneas que no son títulos al contenido
