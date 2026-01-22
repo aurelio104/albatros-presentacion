@@ -265,6 +265,7 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
 
           {/* Renderizar descripción con imágenes inline si están en HTML */}
           {(() => {
+            // En el modal siempre mostrar contenido completo, independientemente del displayMode
             let content = widget.content.description || widget.preview || ''
             const hasHTML = content && /<img\s+src=/i.test(content)
             const hasImagesArray = widget.content.images && widget.content.images.length > 0

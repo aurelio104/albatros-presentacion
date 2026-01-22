@@ -1063,6 +1063,73 @@ async function extractFromExcel(fileBuffer) {
   }
 }
 
+// Generar resumen inteligente del contenido
+function generateIntelligentSummary(content, maxLength = 250) {
+  if (!content || content.length <= maxLength) {
+    return content
+  }
+  
+  // Remover HTML tags para análisis
+  const textOnly = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  
+  if (textOnly.length <= maxLength) {
+    return content.substring(0, content.indexOf(textOnly) + textOnly.length)
+  }
+  
+  // Dividir en párrafos
+  const paragraphs = textOnly.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+  
+  if (paragraphs.length === 0) {
+    return content.substring(0, maxLength) + '...'
+  }
+  
+  // Tomar los primeros párrafos hasta alcanzar el límite
+  let summary = ''
+  let totalLength = 0
+  
+  for (const para of paragraphs) {
+    const paraLength = para.length
+    if (totalLength + paraLength <= maxLength - 50) { // Dejar margen para "..."
+      summary += (summary ? '\n\n' : '') + para
+      totalLength += paraLength + (summary ? 2 : 0)
+    } else {
+      // Si el párrafo es muy largo, tomar solo las primeras oraciones
+      const sentences = para.split(/[.!?]+\s+/).filter(s => s.trim().length > 0)
+      let paraSummary = ''
+      for (const sentence of sentences) {
+        if (totalLength + sentence.length <= maxLength - 50) {
+          paraSummary += (paraSummary ? '. ' : '') + sentence
+          totalLength += sentence.length + (paraSummary ? 2 : 0)
+        } else {
+          break
+        }
+      }
+      if (paraSummary) {
+        summary += (summary ? '\n\n' : '') + paraSummary + '.'
+      }
+      break
+    }
+  }
+  
+  // Si el resumen está vacío, tomar las primeras oraciones del primer párrafo
+  if (!summary && paragraphs.length > 0) {
+    const firstPara = paragraphs[0]
+    const sentences = firstPara.split(/[.!?]+\s+/).filter(s => s.trim().length > 0)
+    summary = sentences.slice(0, 2).join('. ') + (sentences.length > 2 ? '...' : '.')
+  }
+  
+  // Si el contenido original tenía HTML, intentar preservar la estructura
+  if (content.includes('<img')) {
+    // Si hay imágenes, mantener al menos una referencia
+    const imgMatch = content.match(/<img[^>]*>/)
+    if (imgMatch && summary.length < maxLength - 20) {
+      summary += ' [Imagen]'
+    }
+  }
+  
+  return summary || content.substring(0, maxLength) + '...'
+}
+
 // Categorizar contenido de forma inteligente
 function categorizeContent(text) {
   const textLower = text.toLowerCase()
@@ -1197,10 +1264,8 @@ router.post('/', upload.single('file'), async (req, res) => {
       // PRESERVAR: contenido completo sin cortar ni modificar
       const fullContent = section.content || ''
       
-      // Preview: primeros 150 caracteres SIN modificar (preservar espacios, puntuación)
-      const preview = fullContent.length > 150 
-        ? fullContent.substring(0, 150) + '...' 
-        : fullContent
+      // Preview: resumen inteligente del contenido (no solo truncar)
+      const preview = generateIntelligentSummary(fullContent, 200)
       
       // Description: contenido completo preservado (sin límite artificial)
       const description = fullContent

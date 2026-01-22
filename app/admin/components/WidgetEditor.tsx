@@ -195,16 +195,16 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
                   flex: 1
                 }}>
                   {(editedWidget.displayMode || 'resumen') === 'resumen' 
-                    ? '✅ Mostrando preview corto en la tarjeta'
-                    : '✅ Mostrando descripción completa en la tarjeta'}
+                    ? '✅ Mostrando resumen inteligente del contenido (ideal para archivos extensos)'
+                    : '✅ Mostrando contenido completo en la tarjeta'}
                 </p>
               </div>
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Vista Previa (texto corto - modo Resumen)
-              </label>
+                <label style={labelStyle}>
+                  Resumen Inteligente (se genera automáticamente para archivos extensos)
+                </label>
               <textarea
                 value={editedWidget.preview}
                 onChange={(e) => handleChange('preview', e.target.value)}

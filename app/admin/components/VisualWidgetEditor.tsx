@@ -484,8 +484,8 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                 flex: 1
               }}>
                 {(editedWidget.displayMode || 'resumen') === 'resumen' 
-                  ? '✅ Mostrando preview corto en la tarjeta'
-                  : '✅ Mostrando descripción completa en la tarjeta'}
+                  ? '✅ Mostrando resumen inteligente del contenido (ideal para archivos extensos)'
+                  : '✅ Mostrando contenido completo en la tarjeta'}
               </p>
             </div>
           </div>
@@ -528,7 +528,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
               fontWeight: '500', 
               color: '#ffffff' 
             }}>
-              Vista Previa (texto corto para modo Resumen)
+              Resumen Inteligente (se genera automáticamente para archivos extensos)
             </label>
             <textarea
               value={editedWidget.preview}

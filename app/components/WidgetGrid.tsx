@@ -155,9 +155,11 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       </h2>
       {/* Helper para detectar si el contenido tiene HTML (imágenes) */}
       {(() => {
+        // Modo resumen: mostrar preview (resumen inteligente)
+        // Modo completo: mostrar description (contenido completo)
         const content = (widget.displayMode || 'resumen') === 'completo' 
           ? widget.content.description || widget.preview
-          : widget.preview
+          : widget.preview || widget.content.description?.substring(0, 200) + '...'
         
         const hasHTML = content && /<img\s+src=/i.test(content)
         const hasImagesArray = widget.content.images && widget.content.images.length > 0
