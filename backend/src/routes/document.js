@@ -368,59 +368,102 @@ async function extractStructuredContentFromWord(fileBuffer, req = null) {
 
 // Función para asociar imágenes a una sección basándose en el contenido
 // PRESERVAR: estructura del contenido, asociar imágenes donde se mencionan
-function associateImagesToSection(section, content, allImages, startIndex, imageKeywords) {
+function associateImagesToSection(section, content, allImages, startIndex, imageKeywords, usedImages = new Set()) {
   const sectionImages = []
   // PRESERVAR: unir contenido manteniendo saltos de línea para análisis
   const fullText = `${section.title} ${content.join('\n')}`.toLowerCase()
   
   // Buscar referencias específicas a imágenes en el texto
-  // Ejemplo: "Ver imagen 1", "Figura 2", "Placard 3", etc.
+  // Ejemplo: "Ver imagen 1", "Figura 2", "Placard 3", "imagen siguiente", etc.
   const imageReferences = []
   imageKeywords.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword}\\s*(?:\\d+|\\w+)?`, 'gi')
-    const matches = fullText.match(regex)
-    if (matches) {
-      matches.forEach(match => {
-        // Extraer número de imagen si existe
-        const numberMatch = match.match(/\d+/)
-        const imageNumber = numberMatch ? parseInt(numberMatch[0]) : null
-        imageReferences.push({ keyword, imageNumber, match })
-      })
-    }
+    // Patrones más específicos: "imagen 1", "figura 2", "placard 3", "imagen siguiente", etc.
+    const patterns = [
+      new RegExp(`\\b${keyword}\\s+(?:número|num|#|nro\\.?)?\\s*(\\d+)`, 'gi'), // "imagen número 1", "figura #2"
+      new RegExp(`\\b${keyword}\\s+(\\d+)`, 'gi'), // "imagen 1", "figura 2"
+      new RegExp(`(?:ver|ver\\s+la|ver\\s+el|ver\\s+en)\\s+${keyword}\\s+(?:número|num|#|nro\\.?)?\\s*(\\d+)`, 'gi'), // "ver imagen 1"
+      new RegExp(`\\b${keyword}\\s+(?:siguiente|anterior|mostrada|adjunta|incluida)`, 'gi'), // "imagen siguiente"
+    ]
+    
+    patterns.forEach((regex, patternIndex) => {
+      const matches = fullText.matchAll(regex)
+      for (const match of matches) {
+        const imageNumber = match[1] ? parseInt(match[1]) : null
+        const position = match.index || 0
+        imageReferences.push({ 
+          keyword, 
+          imageNumber, 
+          match: match[0],
+          position,
+          patternIndex // Prioridad: patrones más específicos primero
+        })
+      }
+    })
   })
+  
+  // Ordenar referencias por posición en el texto (primero las que aparecen antes)
+  imageReferences.sort((a, b) => a.position - b.position)
   
   // Si el contenido menciona imágenes, asociar las disponibles
   const hasImageReference = imageReferences.length > 0 || imageKeywords.some(keyword => fullText.includes(keyword.toLowerCase()))
   
   if (hasImageReference && allImages.length > 0) {
-    // Si hay referencias numeradas, intentar asociar por número
+    // Si hay referencias numeradas, intentar asociar por número (más preciso)
     if (imageReferences.length > 0) {
       imageReferences.forEach(ref => {
         if (ref.imageNumber !== null) {
-          const imageIndex = (ref.imageNumber - 1) % allImages.length // Convertir número a índice (1-based a 0-based)
+          // Usar el número exacto si está disponible
+          const imageIndex = ref.imageNumber - 1 // Convertir número a índice (1-based a 0-based)
           if (imageIndex >= 0 && imageIndex < allImages.length) {
             const img = allImages[imageIndex]
-            if (!sectionImages.includes(img)) {
+            // Solo agregar si no está ya usada y no está ya en la sección
+            if (!usedImages.has(img) && !sectionImages.includes(img)) {
               sectionImages.push(img)
+              usedImages.add(img)
             }
+          }
+        } else if (ref.match.toLowerCase().includes('siguiente') || ref.match.toLowerCase().includes('adjunta')) {
+          // Para "imagen siguiente" o "imagen adjunta", usar la siguiente disponible
+          const nextAvailableIndex = allImages.findIndex(img => !usedImages.has(img) && !sectionImages.includes(img))
+          if (nextAvailableIndex >= 0) {
+            const img = allImages[nextAvailableIndex]
+            sectionImages.push(img)
+            usedImages.add(img)
           }
         }
       })
     }
     
-    // Si aún no hay imágenes asociadas o hay más referencias, asociar basándose en el índice de inicio
-    if (sectionImages.length === 0) {
-      const numImagesToAssociate = Math.min(2, allImages.length - startIndex) // Máximo 2 imágenes por sección
-      for (let i = 0; i < numImagesToAssociate && (startIndex + i) < allImages.length; i++) {
-        const img = allImages[startIndex + i]
-        if (!sectionImages.includes(img)) {
+    // Si aún no hay imágenes asociadas, usar el índice de inicio (distribución secuencial)
+    if (sectionImages.length === 0 && allImages.length > 0) {
+      // Buscar la primera imagen disponible desde startIndex
+      let found = 0
+      const maxImages = Math.min(2, allImages.length) // Máximo 2 imágenes por sección
+      
+      for (let i = startIndex; i < allImages.length && found < maxImages; i++) {
+        const img = allImages[i]
+        if (!usedImages.has(img) && !sectionImages.includes(img)) {
           sectionImages.push(img)
+          usedImages.add(img)
+          found++
+        }
+      }
+      
+      // Si no encontramos desde startIndex, buscar desde el inicio
+      if (found === 0) {
+        for (let i = 0; i < allImages.length && found < maxImages; i++) {
+          const img = allImages[i]
+          if (!usedImages.has(img) && !sectionImages.includes(img)) {
+            sectionImages.push(img)
+            usedImages.add(img)
+            found++
+          }
         }
       }
     }
   }
   
-  return sectionImages
+  return { images: sectionImages, usedImages }
 }
 
 // Función inteligente para extraer secciones estructuradas con imágenes asociadas
@@ -434,9 +477,10 @@ function extractStructuredSections(fullText, images = []) {
   let currentContent = [] // Array de líneas originales (sin modificar)
   let currentLevel = 1
   let sectionImageIndex = 0 // Índice para distribuir imágenes
+  const usedImages = new Set() // Rastrear imágenes ya usadas para evitar duplicados
   
   // Palabras clave que indican presencia de imágenes
-  const imageKeywords = ['imagen', 'image', 'figura', 'figure', 'foto', 'photo', 'gráfico', 'graphic', 'diagrama', 'diagram', 'placa', 'placard', 'evidencia', 'fotostática', 'evidencias fotostáticas']
+  const imageKeywords = ['imagen', 'image', 'figura', 'figure', 'foto', 'photo', 'gráfico', 'graphic', 'diagrama', 'diagram', 'placa', 'placard', 'evidencia', 'fotostática', 'evidencias fotostáticas', 'fotografía', 'photography', 'ilustración', 'illustration']
   
   for (let i = 0; i < allLines.length; i++) {
     const originalLine = allLines[i] // Línea original sin modificar
@@ -451,7 +495,8 @@ function extractStructuredSections(fullText, images = []) {
       // Guardar sección anterior si existe
       if (currentSection && (currentContent.length > 0 || currentSection.title)) {
         // Asociar imágenes a esta sección antes de guardarla
-        const sectionImages = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords)
+        const result = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords, usedImages)
+        const sectionImages = result.images
         // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
         const preservedContent = currentContent.join('\n')
         sections.push({
@@ -487,11 +532,14 @@ function extractStructuredSections(fullText, images = []) {
         line.toLowerCase().includes(keyword.toLowerCase())
       )
       
-      if (hasImageReference && images.length > 0) {
-        // Asociar la siguiente imagen disponible a esta sección
-        const nextImageIndex = sectionImageIndex % images.length
-        if (nextImageIndex < images.length && !currentSection.images.includes(images[nextImageIndex])) {
-          currentSection.images.push(images[nextImageIndex])
+      if (hasImageReference && images.length > 0 && currentSection) {
+        // Buscar la siguiente imagen disponible que no esté ya usada
+        const nextAvailableImage = images.find(img => 
+          !usedImages.has(img) && !currentSection.images.includes(img)
+        )
+        if (nextAvailableImage) {
+          currentSection.images.push(nextAvailableImage)
+          usedImages.add(nextAvailableImage)
           sectionImageIndex++
         }
       }
@@ -528,7 +576,8 @@ function extractStructuredSections(fullText, images = []) {
   
   // Agregar última sección
   if (currentSection) {
-    const sectionImages = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords)
+    const result = associateImagesToSection(currentSection, currentContent, images, sectionImageIndex, imageKeywords, usedImages)
+    const sectionImages = result.images
     // PRESERVAR: unir líneas manteniendo saltos de línea originales, sin trim final
     const preservedContent = currentContent.join('\n')
     sections.push({
