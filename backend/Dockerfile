@@ -30,8 +30,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/backend/koyeb.json ./koyeb.json
 
-# Crear directorios necesarios
-RUN mkdir -p data public/images
+# Crear directorios necesarios (también se crearán en runtime si se monta un volumen)
+RUN mkdir -p data public/images public/files data/presentations data/backups
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S nodejs && \

@@ -10,6 +10,7 @@ import { PDFDocument } from 'pdf-lib'
 import AdmZip from 'adm-zip'
 import { parseStringPromise } from 'xml2js'
 import logger from '../utils/logger.js'
+import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -324,8 +325,8 @@ async function extractStructuredContentFromWord(fileBuffer, req = null) {
     const images = []
     const imageMatches = html.match(/<img[^>]+src="data:image\/([^;]+);base64,([^"]+)"/g)
     if (imageMatches) {
-      const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
-      await fs.mkdir(imagesDir, { recursive: true })
+      const imagesDir = STORAGE_PATHS.images()
+      await ensureStorageDir(imagesDir)
       
       for (let i = 0; i < imageMatches.length; i++) {
         const match = imageMatches[i].match(/data:image\/([^;]+);base64,([^"]+)/)
@@ -818,8 +819,8 @@ function extractStructuredSections(fullText, images = []) {
 // pdf-lib no expone fácilmente las imágenes, así que usamos un enfoque de parsing directo
 async function extractImagesFromPDF(fileBuffer, req = null) {
   const extractedImages = []
-  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
-  await fs.mkdir(imagesDir, { recursive: true })
+  const imagesDir = STORAGE_PATHS.images()
+  await ensureStorageDir(imagesDir)
   
   try {
     logger.debug('🖼️  Iniciando extracción de imágenes del PDF...')
@@ -974,8 +975,8 @@ async function extractFromPDF(fileBuffer, req = null) {
 // Extraer imágenes de DOCX
 async function extractImagesFromDocx(fileBuffer, req = null) {
   const images = []
-  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
-  await fs.mkdir(imagesDir, { recursive: true })
+  const imagesDir = STORAGE_PATHS.images()
+  await ensureStorageDir(imagesDir)
 
   try {
     const zip = new AdmZip(fileBuffer)
@@ -1002,8 +1003,8 @@ async function extractImagesFromDocx(fileBuffer, req = null) {
 // Extraer imágenes de PPTX
 async function extractImagesFromPptx(fileBuffer, req = null) {
   const images = []
-  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
-  await fs.mkdir(imagesDir, { recursive: true })
+  const imagesDir = STORAGE_PATHS.images()
+  await ensureStorageDir(imagesDir)
 
   try {
     const zip = new AdmZip(fileBuffer)
@@ -1139,8 +1140,8 @@ async function renderAllSlidesAsImages(fileBuffer, req = null) {
   const os = await import('os')
   const path = await import('path')
   
-  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
-  await fs.mkdir(imagesDir, { recursive: true })
+  const imagesDir = STORAGE_PATHS.images()
+  await ensureStorageDir(imagesDir)
   
   const slideImages = []
   

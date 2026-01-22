@@ -7,14 +7,16 @@ import logger from '../utils/logger.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
+
 const router = express.Router()
-const CONTENT_FILE = path.join(__dirname, '..', '..', 'data', 'content.json')
-const BACKUPS_DIR = path.join(__dirname, '..', '..', 'data', 'backups')
+const CONTENT_FILE = STORAGE_PATHS.content()
+const BACKUPS_DIR = STORAGE_PATHS.backups()
 
 // Asegurar que el directorio de backups existe
 async function ensureBackupsDir() {
   try {
-    await fs.mkdir(BACKUPS_DIR, { recursive: true })
+    await ensureStorageDir(BACKUPS_DIR)
   } catch (error) {
     logger.error('Error creando directorio de backups:', error)
   }

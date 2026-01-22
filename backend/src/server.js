@@ -65,22 +65,24 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 // Rate limiting para APIs
 app.use('/api', rateLimiter)
 
-// Crear directorios necesarios
-const dataDir = path.join(__dirname, '..', 'data')
-const imagesDir = path.join(__dirname, '..', 'public', 'images')
+// Importar utilidades de almacenamiento
+import { initializeStorage, STORAGE_PATHS } from './utils/storage.js'
 
 async function ensureDirectories() {
   try {
-    await fs.mkdir(dataDir, { recursive: true })
-    await fs.mkdir(imagesDir, { recursive: true })
+    // Inicializar almacenamiento persistente (usa volumen en Koyeb, local en desarrollo)
+    await initializeStorage()
     logger.info('✅ Directorios creados/verificados')
   } catch (error) {
     logger.error('Error creando directorios:', error)
   }
 }
 
-// Servir archivos estáticos (imágenes)
-app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')))
+// Servir archivos estáticos (imágenes) desde almacenamiento persistente
+app.use('/images', express.static(STORAGE_PATHS.images()))
+
+// Servir archivos (PDFs, Excel) desde almacenamiento persistente
+app.use('/files', express.static(STORAGE_PATHS.files()))
 
 // Rutas API
 app.use('/api/content', contentRoutes)

@@ -7,8 +7,10 @@ import logger from '../utils/logger.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
+
 const router = express.Router()
-const CONTENT_FILE = path.join(__dirname, '..', '..', 'data', 'content.json')
+const CONTENT_FILE = STORAGE_PATHS.content()
 
 // Función para obtener contenido por defecto
 function getDefaultContent() {
@@ -69,13 +71,13 @@ router.post('/', async (req, res) => {
       })
     }
 
-    // Asegurar que el directorio existe
-    await fs.mkdir(path.dirname(CONTENT_FILE), { recursive: true })
+    // Asegurar que el directorio existe (usando utilidad de almacenamiento)
+    await ensureStorageDir(STORAGE_PATHS.data())
 
     // Crear backup automático antes de guardar
-    const backupsDir = path.join(__dirname, '..', '..', 'data', 'backups')
+    const backupsDir = STORAGE_PATHS.backups()
     try {
-      await fs.mkdir(backupsDir, { recursive: true })
+      await ensureStorageDir(backupsDir)
       
       // Leer contenido actual si existe
       let currentContent = null

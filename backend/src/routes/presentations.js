@@ -7,14 +7,16 @@ import logger from '../utils/logger.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
+
 const router = express.Router()
-const CONTENT_FILE = path.join(__dirname, '..', '..', 'data', 'content.json')
-const PRESENTATIONS_DIR = path.join(__dirname, '..', '..', 'data', 'presentations')
+const CONTENT_FILE = STORAGE_PATHS.content()
+const PRESENTATIONS_DIR = STORAGE_PATHS.presentations()
 
 // Asegurar que el directorio de presentaciones existe
 async function ensurePresentationsDir() {
   try {
-    await fs.mkdir(PRESENTATIONS_DIR, { recursive: true })
+    await ensureStorageDir(PRESENTATIONS_DIR)
   } catch (error) {
     logger.error('Error creando directorio de presentaciones:', error)
   }
@@ -193,9 +195,9 @@ router.post('/load/:id', async (req, res) => {
     }
     
     // Crear backup del contenido actual antes de cargar
-    const backupsDir = path.join(__dirname, '..', '..', 'data', 'backups')
+    const backupsDir = STORAGE_PATHS.backups()
     try {
-      await fs.mkdir(backupsDir, { recursive: true })
+      await ensureStorageDir(backupsDir)
       
       let currentContent = null
       try {
@@ -225,7 +227,7 @@ router.post('/load/:id', async (req, res) => {
     }
     
     // Aplicar contenido de la presentación
-    await fs.mkdir(path.dirname(CONTENT_FILE), { recursive: true })
+    await ensureStorageDir(STORAGE_PATHS.data())
     await fs.writeFile(CONTENT_FILE, JSON.stringify(presentationData.content, null, 2), 'utf-8')
     
     logger.info(`✅ Presentación cargada: ${presentationData.name} (${id})`)

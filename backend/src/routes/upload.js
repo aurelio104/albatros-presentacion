@@ -4,17 +4,18 @@ import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import logger from '../utils/logger.js'
+import { STORAGE_PATHS, ensureStorageDir } from '../utils/storage.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const router = express.Router()
 
-// Configurar multer para guardar archivos
+// Configurar multer para guardar archivos en almacenamiento persistente
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', '..', 'public', 'images')
-    await fs.mkdir(uploadDir, { recursive: true })
+    const uploadDir = STORAGE_PATHS.images()
+    await ensureStorageDir(uploadDir)
     cb(null, uploadDir)
   },
   filename: (req, file, cb) => {
