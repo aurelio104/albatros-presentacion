@@ -261,13 +261,13 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
             ×
           </button>
 
-          <h1 className="modal-title">{widget.content.title}</h1>
+          <h1 className="modal-title">{widget.title}</h1>
 
           {/* Renderizar descripción con imágenes inline si están en HTML */}
           <div 
             className="modal-description"
             dangerouslySetInnerHTML={{
-              __html: widget.content.description
+              __html: (widget.content.description || widget.preview || '')
                 .replace(/\n/g, '<br>')
                 .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
                   const httpsSrc = ensureHttps(src)
