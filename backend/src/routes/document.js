@@ -1123,23 +1123,44 @@ async function renderAllSlidesAsImages(fileBuffer, req = null) {
       
       const backendUrl = getBackendUrl(req)
       
-      for (let i = 0; i < pngFiles.length; i++) {
-        const pngFile = pngFiles[i]
+      // Usar un objeto para mapear número de diapositiva a URL de imagen
+      // Esto asegura que diapositiva 1 → imagen 1, diapositiva 2 → imagen 2, etc.
+      const slideImagesMap = {}
+      
+      for (const pngFile of pngFiles) {
         const sourcePath = path.join(tempOutputDir, pngFile)
         
         // Extraer número de diapositiva del nombre del archivo
+        // LibreOffice genera: presentation.1.png, presentation.2.png, etc.
         const slideNumberMatch = pngFile.match(/\.(\d+)\.png$/)
-        const slideNumber = slideNumberMatch ? parseInt(slideNumberMatch[1]) : i + 1
+        if (!slideNumberMatch) {
+          logger.warn(`⚠️  No se pudo extraer número de diapositiva del archivo: ${pngFile}`)
+          continue
+        }
         
+        const slideNumber = parseInt(slideNumberMatch[1])
         const imageName = `pptx-full-${Date.now()}-slide${slideNumber}.png`
         const finalImagePath = path.join(imagesDir, imageName)
         
         try {
           await fs.copyFile(sourcePath, finalImagePath)
-          slideImages.push(`${backendUrl}/images/${imageName}`)
-          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName} (índice ${i})`)
+          const imageUrl = `${backendUrl}/images/${imageName}`
+          slideImagesMap[slideNumber] = imageUrl // Mapear número de diapositiva a URL
+          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
         } catch (copyError) {
           logger.debug(`⚠️  Error copiando imagen de diapositiva ${slideNumber}:`, copyError.message)
+        }
+      }
+      
+      // Convertir el mapa a un array ordenado (índice 0 = diapositiva 1, índice 1 = diapositiva 2, etc.)
+      const maxSlideNumber = Math.max(...Object.keys(slideImagesMap).map(Number), 0)
+      for (let i = 1; i <= maxSlideNumber; i++) {
+        if (slideImagesMap[i]) {
+          slideImages.push(slideImagesMap[i])
+        } else {
+          // Si falta una diapositiva, agregar null para mantener el orden
+          slideImages.push(null)
+          logger.warn(`⚠️  Falta imagen para diapositiva ${i}`)
         }
       }
       
@@ -1228,10 +1249,18 @@ async function extractFromPptx(fileBuffer, req = null) {
       // IMPORTANTE: Usar slideNumber - 1 porque las imágenes están indexadas desde 0
       // pero slideNumber es 1-based (slide1 = índice 0, slide2 = índice 1, etc.)
       const imageIndex = slideNumber - 1
-      const fullPageImage = fullPageImages[imageIndex] || null
+      const fullPageImage = (imageIndex >= 0 && imageIndex < fullPageImages.length) 
+        ? fullPageImages[imageIndex] 
+        : null
       
-      if (!fullPageImage && fullPageImages.length > 0) {
-        logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
+      if (!fullPageImage) {
+        if (fullPageImages.length > 0) {
+          logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
+        } else {
+          logger.debug(`ℹ️  No hay imágenes renderizadas disponibles (LibreOffice puede no estar disponible)`)
+        }
+      } else {
+        logger.debug(`✅ Imagen encontrada para diapositiva ${slideNumber} (índice ${imageIndex}): ${fullPageImage.substring(fullPageImage.lastIndexOf('/') + 1)}`)
       }
 
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
