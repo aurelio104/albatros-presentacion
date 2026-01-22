@@ -335,8 +335,14 @@ async function extractStructuredContentFromWord(fileBuffer, req = null) {
     const fullText = textResult.value // Texto completo preservado (espacios, saltos de línea, puntuación)
     
     logger.debug(`✅ Word procesado: ${fullText.length} caracteres, ${allImages.length} imágenes`)
+    logger.debug(`🖼️  Imágenes extraídas en orden: ${allImages.map((img, idx) => `Imagen ${idx + 1}`).join(', ')}`)
     
-    return extractStructuredSections(fullText, allImages)
+    // Extraer secciones con imágenes insertadas inline donde se mencionen
+    const result = extractStructuredSections(fullText, allImages)
+    
+    logger.debug(`📊 Secciones extraídas: ${result.sections.length}, Imágenes totales: ${allImages.length}`)
+    
+    return result
   } catch (error) {
     logger.error('Error extrayendo contenido Word:', error)
     try {
@@ -523,30 +529,72 @@ function extractStructuredSections(fullText, images = []) {
       currentLevel = titleLevel
       currentContent = [] // Reiniciar con array vacío
     } else if (currentSection) {
-      // Detectar si esta línea menciona una imagen ANTES de agregarla
-      const hasImageReference = imageKeywords.some(keyword => 
-        line.toLowerCase().includes(keyword.toLowerCase())
-      )
-      
       // Agregar contenido a la sección actual - PRESERVAR línea original
-      let lineToAdd = originalLine
+      currentContent.push(originalLine) // Guardar línea original completa primero
       
-      if (hasImageReference && images.length > 0 && currentSection) {
-        // Buscar la siguiente imagen disponible que no esté ya usada
-        const nextAvailableImage = images.find(img => 
-          !usedImages.has(img) && !currentSection.images.includes(img)
-        )
-        if (nextAvailableImage) {
-          // Insertar marcador de imagen HTML justo después de la línea que menciona la imagen
-          // Usar un marcador que ReactQuill pueda renderizar
-          lineToAdd = originalLine + '\n\n<img src="' + nextAvailableImage + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px;" />\n\n'
-          currentSection.images.push(nextAvailableImage)
-          usedImages.add(nextAvailableImage)
-          sectionImageIndex++
-        }
+      // Detectar referencias precisas a imágenes en esta línea
+      const lineLower = line.toLowerCase()
+      const imageReferences = []
+      
+      // Buscar referencias numeradas específicas: "imagen 1", "figura 2", "placard 3", etc.
+      imageKeywords.forEach(keyword => {
+        // Patrón 1: "imagen 1", "figura 2", "placard 3"
+        const numberPattern = new RegExp(`\\b${keyword}\\s+(\\d+)`, 'gi')
+        const numberMatches = [...lineLower.matchAll(numberPattern)]
+        numberMatches.forEach(match => {
+          const imageNumber = parseInt(match[1])
+          const position = match.index || 0
+          imageReferences.push({
+            type: 'numbered',
+            number: imageNumber,
+            position: position + currentContent.length, // Posición en el contenido completo
+            keyword: match[0]
+          })
+        })
+        
+        // Patrón 2: "ver imagen", "imagen siguiente", "imagen adjunta"
+        const contextualPattern = new RegExp(`(?:ver\\s+)?${keyword}\\s+(?:siguiente|adjunta|mostrada|incluida|en\\s+la\\s+siguiente)`, 'gi')
+        const contextualMatches = [...lineLower.matchAll(contextualPattern)]
+        contextualMatches.forEach(match => {
+          imageReferences.push({
+            type: 'contextual',
+            position: (match.index || 0) + currentContent.length,
+            keyword: match[0]
+          })
+        })
+      })
+      
+      // Si hay referencias, insertar imágenes en el orden correcto
+      if (imageReferences.length > 0 && images.length > 0) {
+        // Ordenar referencias por posición en el texto
+        imageReferences.sort((a, b) => a.position - b.position)
+        
+        imageReferences.forEach(ref => {
+          let imageToInsert = null
+          
+          if (ref.type === 'numbered' && ref.number) {
+            // Usar el número exacto de la referencia (1-based a 0-based)
+            const imageIndex = ref.number - 1
+            if (imageIndex >= 0 && imageIndex < images.length) {
+              imageToInsert = images[imageIndex]
+            }
+          } else if (ref.type === 'contextual') {
+            // Para referencias contextuales, usar la siguiente imagen disponible
+            imageToInsert = images.find(img => 
+              !usedImages.has(img) && !currentSection.images.includes(img)
+            )
+          }
+          
+          // Insertar imagen si se encontró una y no está ya usada
+          if (imageToInsert && !usedImages.has(imageToInsert)) {
+            // Insertar imagen justo después de la línea actual
+            currentContent.push('\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n')
+            currentSection.images.push(imageToInsert)
+            usedImages.add(imageToInsert)
+            sectionImageIndex++
+          }
+        })
       }
-      
-      currentContent.push(lineToAdd) // Guardar línea con marcador de imagen si aplica
     } else if (line.length > 50) {
       // Si no hay sección actual pero hay contenido, crear una
       currentSection = {
