@@ -164,12 +164,14 @@ export default function Header({
       `}</style>
       <header className="header">
         <div className="header-logo-container">
-          <img
-            src={logoSrc}
-            alt="Albatros Logo"
-            className="header-logo"
-            loading="eager"
-          />
+              <img
+                src={logoSrc}
+                alt="Albatros Logo"
+                className="header-logo"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
         </div>
       </header>
     </>

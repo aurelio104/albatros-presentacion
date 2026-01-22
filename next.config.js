@@ -75,6 +75,24 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['react', 'react-dom'],
   },
+  
+  // Optimización de compilación
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
+  // Optimización de producción
+  productionBrowserSourceMaps: false,
+  
+  // Optimización de módulos
+  modularizeImports: {
+    'react': {
+      transform: 'react',
+      skipDefaultConversion: true,
+    },
+  },
 }
 
 module.exports = nextConfig

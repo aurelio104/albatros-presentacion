@@ -47,4 +47,52 @@ body {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 0, 0, 0;
+  /* Variables para padding-top del main */
+  --header-height-offset: 90px; /* Default para desktop */
+  --header-height-offset-lg: 100px; /* Large screens */
+  --header-height-offset-md: 80px; /* Medium screens */
+  --header-height-offset-sm: 70px; /* Tablets */
+  --header-height-offset-xs: 60px; /* Small tablets */
+  --header-height-offset-xxs: 55px; /* Mobile */
+  --header-height-offset-xxxs: 50px; /* Very small mobile */
+  --header-height-offset-landscape: 45px; /* Landscape mobile */
+}
+
+/* Optimizaciones de rendimiento */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Optimización de scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimización de renderizado para imágenes y videos */
+img, video {
+  content-visibility: auto;
+}
+
+/* Media queries para variables de header */
+@media (min-width: 1400px) {
+  :root { --header-height-offset: 100px; }
+}
+@media (max-width: 1024px) and (min-width: 769px) {
+  :root { --header-height-offset: 80px; }
+}
+@media (max-width: 768px) {
+  :root { --header-height-offset: 70px; }
+}
+@media (max-width: 640px) {
+  :root { --header-height-offset: 60px; }
+}
+@media (max-width: 480px) {
+  :root { --header-height-offset: 55px; }
+}
+@media (max-width: 360px) {
+  :root { --header-height-offset: 50px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  :root { --header-height-offset: 45px; }
 }

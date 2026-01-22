@@ -112,9 +112,10 @@ export default function VideoBackground({
               loop
               muted
               playsInline
-              preload="auto"
+              preload="metadata"
               className="video-element"
               onLoadedData={() => setIsLoading(false)}
+              onCanPlay={() => setIsLoading(false)}
               onError={() => {
                 setVideoError(true)
                 setIsLoading(false)

@@ -35,12 +35,23 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        {/* Preconnect a backend para conexión más rápida */}
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'} crossOrigin="anonymous" />
+        {/* DNS Prefetch para recursos externos */}
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'} />
+        {/* Preload de recursos críticos */}
+        <link rel="preload" href="/images/logoB.png" as="image" type="image/png" />
+        <link rel="preload" href="/images/logotB.png" as="image" type="image/png" />
+        {/* Favicons */}
         <link rel="icon" href="/images/logoB.png" type="image/png" />
         <link rel="apple-touch-icon" href="/images/logoB.png" />
         <link rel="shortcut icon" href="/images/logoB.png" />
+        {/* PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Albatros" />
+        {/* Performance hints */}
+        <meta httpEquiv="x-dns-prefetch-control" content="on" />
       </head>
       <body>{children}</body>
     </html>

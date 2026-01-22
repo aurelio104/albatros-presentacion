@@ -6,14 +6,40 @@ import VideoBackground from './components/VideoBackground'
 import Header from './components/Header'
 import { WidgetData, AppContent } from './types'
 
-// Lazy load componentes pesados
+// Lazy load componentes pesados con mejor optimización
 const WidgetGrid = dynamic(() => import('./components/WidgetGrid'), {
-  loading: () => <div style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>Cargando widgets...</div>,
+  loading: () => (
+    <div style={{ 
+      padding: '2rem', 
+      textAlign: 'center', 
+      color: 'white',
+      minHeight: '200px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        border: '3px solid rgba(255,255,255,0.3)',
+        borderTop: '3px solid white',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  ),
   ssr: false,
 })
 
 const InfoModal = dynamic(() => import('./components/InfoModal'), {
   ssr: false,
+  loading: () => null, // No mostrar nada mientras carga el modal
 })
 
 export default function Home() {
@@ -40,24 +66,47 @@ export default function Home() {
   const loadContent = async () => {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
-      const response = await fetch(`${backendUrl}/api/content`, {
-        cache: 'no-store',
-      })
-      if (response.ok) {
-        const data = await response.json()
-        // Normalizar URLs HTTP a HTTPS para todas las imágenes
-        if (data.widgets) {
-          data.widgets = data.widgets.map((widget: any) => {
-            if (widget.content?.images) {
-              widget.content.images = widget.content.images.map((img: string) => 
-                img.startsWith('http://') ? img.replace('http://', 'https://') : img
-              )
-            }
-            return widget
-          })
-        }
+      // Usar caché con revalidación para mejor rendimiento
+      // En cliente, usar caché con revalidación para mejor rendimiento
+      const cacheKey = `${backendUrl}/api/content`
+      const cachedData = typeof window !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
+      const cacheTimestamp = cachedData ? JSON.parse(cachedData).timestamp : 0
+      const now = Date.now()
+      const CACHE_DURATION = 60000 // 60 segundos
+      
+      if (cachedData && (now - cacheTimestamp < CACHE_DURATION)) {
+        const data = JSON.parse(cachedData).data
         setContent(data)
         setError(null)
+        setLoading(false)
+        return
+      }
+      
+      const response = await fetch(`${backendUrl}/api/content`, {
+        cache: 'no-store', // Mantener no-store para datos frescos, pero usar sessionStorage
+      })
+        if (response.ok) {
+          const data = await response.json()
+          // Normalizar URLs HTTP a HTTPS para todas las imágenes
+          if (data.widgets) {
+            data.widgets = data.widgets.map((widget: any) => {
+              if (widget.content?.images) {
+                widget.content.images = widget.content.images.map((img: string) => 
+                  img.startsWith('http://') ? img.replace('http://', 'https://') : img
+                )
+              }
+              return widget
+            })
+          }
+          // Guardar en caché de sesión
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data,
+              timestamp: Date.now()
+            }))
+          }
+          setContent(data)
+          setError(null)
       } else {
         setError('Error al cargar el contenido')
       }
