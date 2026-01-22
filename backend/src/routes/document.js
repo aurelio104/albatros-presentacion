@@ -716,7 +716,20 @@ function extractStructuredSections(fullText, images = []) {
   // Agregar última sección
   if (currentSection) {
     // PRESERVAR: unir líneas manteniendo saltos de línea originales
-    const preservedContent = currentContent.join('\n').trim()
+    let preservedContent = currentContent.join('\n').trim()
+    
+    // Si hay imágenes asociadas a esta sección que no están insertadas inline, agregarlas al final
+    if (currentSection.images.length > 0) {
+      const imagesInContent = (preservedContent.match(/<img\s+src=/gi) || []).length
+      const imagesToAdd = currentSection.images.slice(imagesInContent)
+      
+      if (imagesToAdd.length > 0) {
+        const imagesHTML = imagesToAdd.map(img => 
+          `\n\n<img src="${img}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n`
+        ).join('')
+        preservedContent = preservedContent + imagesHTML
+      }
+    }
     
     // Solo guardar si tiene contenido o título válido
     if (preservedContent.length > 0 || currentSection.title) {
@@ -736,9 +749,17 @@ function extractStructuredSections(fullText, images = []) {
     sections.push(...paragraphs.map((para, idx) => {
       if (para.trim().length > 0) { // Solo crear sección si tiene contenido
         const paraImages = images.length > 0 ? [images[idx % images.length]] : []
+        let paraContent = para
+        // Agregar imágenes al final del párrafo
+        if (paraImages.length > 0) {
+          const imagesHTML = paraImages.map(img => 
+            `\n\n<img src="${img}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n`
+          ).join('')
+          paraContent = paraContent + imagesHTML
+        }
         return {
           title: `Sección ${idx + 1}`,
-          content: para, // PRESERVAR: sin .trim() para mantener espacios y saltos de línea
+          content: paraContent, // PRESERVAR: sin .trim() para mantener espacios y saltos de línea
           images: paraImages,
           level: 1
         }
@@ -748,6 +769,7 @@ function extractStructuredSections(fullText, images = []) {
   }
   
   // Distribuir imágenes restantes entre secciones que no tienen imágenes
+  // Y agregarlas al final del contenido si no están ya insertadas
   const sectionsWithoutImages = sections.filter(s => s.images.length === 0)
   if (sectionsWithoutImages.length > 0 && images.length > 0) {
     images.forEach((img, idx) => {
@@ -757,10 +779,31 @@ function extractStructuredSections(fullText, images = []) {
         const targetSection = sectionsWithoutImages[idx % sectionsWithoutImages.length]
         if (targetSection) {
           targetSection.images.push(img)
+          // Agregar imagen al final del contenido si no está ya insertada
+          const imagesInContent = (targetSection.content.match(/<img\s+src=/gi) || []).length
+          if (imagesInContent === 0) {
+            const imageHTML = `\n\n<img src="${img}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n`
+            targetSection.content = targetSection.content + imageHTML
+          }
         }
       }
     })
   }
+  
+  // Para todas las secciones, asegurar que las imágenes del array estén en el contenido
+  sections.forEach(section => {
+    if (section.images && section.images.length > 0) {
+      const imagesInContent = (section.content.match(/<img\s+src=/gi) || []).length
+      const imagesToAdd = section.images.slice(imagesInContent)
+      
+      if (imagesToAdd.length > 0) {
+        const imagesHTML = imagesToAdd.map(img => 
+          `\n\n<img src="${img}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n`
+        ).join('')
+        section.content = section.content + imagesHTML
+      }
+    }
+  })
   
   return { sections, allImages: images }
 }
