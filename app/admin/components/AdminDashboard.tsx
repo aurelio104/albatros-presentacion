@@ -34,6 +34,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       const response = await fetch(`${backendUrl}/api/content`, { cache: 'no-store' })
       if (response.ok) {
         const data = await response.json()
+        // Normalizar URLs HTTP a HTTPS para todas las imágenes
+        if (data.widgets) {
+          data.widgets = data.widgets.map((widget: any) => {
+            if (widget.content?.images) {
+              widget.content.images = widget.content.images.map((img: string) => 
+                img.startsWith('http://') ? img.replace('http://', 'https://') : img
+              )
+            }
+            return widget
+          })
+        }
         setContent(data)
       } else {
         const errorData = await response.json().catch(() => ({}))

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { WidgetData } from '@/app/types'
 import dynamic from 'next/dynamic'
+import { ensureHttps } from '@/app/utils/imageUrl'
 
 // Lazy load ReactQuill
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
@@ -289,7 +290,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                   }}
                 >
                   <img
-                    src={img}
+                    src={ensureHttps(img)}
                     alt={`Imagen ${index + 1}`}
                     style={{
                       width: '100%',
@@ -299,7 +300,12 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                       display: 'block',
                     }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none'
+                      const target = e.target as HTMLImageElement
+                      if (target.src.startsWith('http://')) {
+                        target.src = ensureHttps(target.src)
+                      } else {
+                        target.style.display = 'none'
+                      }
                     }}
                   />
                   {isEditing && (
@@ -559,7 +565,7 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                   }}
                 >
                   <img
-                    src={img}
+                    src={ensureHttps(img)}
                     alt={`Imagen ${index + 1}`}
                     style={{
                       width: '100%',
@@ -567,7 +573,12 @@ export default function VisualWidgetEditor({ widget, onUpdate }: VisualWidgetEdi
                       objectFit: 'cover',
                     }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none'
+                      const target = e.target as HTMLImageElement
+                      if (target.src.startsWith('http://')) {
+                        target.src = ensureHttps(target.src)
+                      } else {
+                        target.style.display = 'none'
+                      }
                     }}
                   />
                   <div style={{

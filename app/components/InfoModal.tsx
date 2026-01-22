@@ -2,6 +2,7 @@
 
 import { WidgetData } from '../types'
 import { useEffect, useState } from 'react'
+import { ensureHttps } from '../utils/imageUrl'
 
 interface InfoModalProps {
   widget: WidgetData
@@ -262,10 +263,19 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
               {widget.content.images.map((image, index) => (
                 <img
                   key={index}
-                  src={image}
+                  src={ensureHttps(image)}
                   alt={`${widget.content.title} ${index + 1}`}
                   className="modal-image"
                   loading="lazy"
+                  onError={(e) => {
+                    // Si falla, intentar con HTTPS si era HTTP
+                    const target = e.target as HTMLImageElement
+                    if (target.src.startsWith('http://')) {
+                      target.src = ensureHttps(target.src)
+                    } else {
+                      target.style.display = 'none'
+                    }
+                  }}
                 />
               ))}
             </div>

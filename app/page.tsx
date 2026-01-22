@@ -45,6 +45,17 @@ export default function Home() {
       })
       if (response.ok) {
         const data = await response.json()
+        // Normalizar URLs HTTP a HTTPS para todas las imágenes
+        if (data.widgets) {
+          data.widgets = data.widgets.map((widget: any) => {
+            if (widget.content?.images) {
+              widget.content.images = widget.content.images.map((img: string) => 
+                img.startsWith('http://') ? img.replace('http://', 'https://') : img
+              )
+            }
+            return widget
+          })
+        }
         setContent(data)
         setError(null)
       } else {
