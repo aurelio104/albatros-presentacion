@@ -1508,14 +1508,17 @@ router.post('/', upload.single('file'), async (req, res) => {
       const finalDescription = description || section.content || preview || ''
       
       // Construir estilo del widget (incluir fondo si existe, especialmente para PowerPoint)
+      // Si hay fullPageImage (imagen completa renderizada), usarla como fondo principal
+      // Si no, usar backgroundImage (solo el fondo)
       const widgetStyle = {
         backgroundColor: undefined, // Se puede sobrescribir
         borderColor: undefined,
         textColor: undefined,
         borderRadius: undefined,
-        backgroundImage: section.backgroundImage || undefined, // Fondo de PowerPoint
-        backgroundSize: section.backgroundImage ? 'cover' : undefined,
-        backgroundPosition: section.backgroundImage ? 'center' : undefined,
+        backgroundImage: section.fullPageImage || section.backgroundImage || undefined, // Imagen completa o fondo
+        backgroundSize: (section.fullPageImage || section.backgroundImage) ? 'cover' : undefined,
+        backgroundPosition: (section.fullPageImage || section.backgroundImage) ? 'center' : undefined,
+        fullPageImage: section.fullPageImage || undefined, // Imagen completa de la página/diapositiva (exactamente igual al original)
       }
 
       return {
