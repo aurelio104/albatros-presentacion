@@ -67,6 +67,14 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
           animation: slideUp 0.3s ease;
         }
+        
+        .modal-content.with-background {
+          background-image: var(--modal-bg-image);
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-color: rgba(0, 0, 0, 0.6); /* Overlay para legibilidad */
+        }
 
         .modal-close {
           position: absolute;
@@ -256,7 +264,13 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
         }
       `}</style>
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className={`modal-content ${widget.style?.backgroundImage ? 'with-background' : ''}`}
+          style={widget.style?.backgroundImage ? {
+            '--modal-bg-image': `url(${ensureHttps(widget.style.backgroundImage)})`
+          } as React.CSSProperties : {}}
+          onClick={(e) => e.stopPropagation()}
+        >
           <button className="modal-close" onClick={onClose} aria-label="Cerrar">
             ×
           </button>

@@ -971,6 +971,70 @@ async function extractImagesFromPptx(fileBuffer, req = null) {
   return images
 }
 
+// Extraer fondo de una diapositiva específica
+async function extractSlideBackground(zip, slideIndex, slideXml, req = null) {
+  try {
+    const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+    await fs.mkdir(imagesDir, { recursive: true })
+    
+    // Buscar fondo en el XML de la diapositiva
+    // El fondo puede estar en: p:cSld/p:bg/p:bgPr/a:blip/@r:embed
+    if (slideXml['p:sld'] && slideXml['p:sld']['p:cSld'] && slideXml['p:sld']['p:cSld'][0]['p:bg']) {
+      const bg = slideXml['p:sld']['p:cSld'][0]['p:bg'][0]
+      if (bg['p:bgPr'] && bg['p:bgPr'][0]) {
+        const bgPr = bg['p:bgPr'][0]
+        
+        // Buscar imagen de fondo (a:blip)
+        if (bgPr['a:blip'] && bgPr['a:blip'][0] && bgPr['a:blip'][0]['$'] && bgPr['a:blip'][0]['$']['r:embed']) {
+          const embedId = bgPr['a:blip'][0]['$']['r:embed']
+          
+          // Buscar la relación en el archivo .rels de la diapositiva
+          // El número de diapositiva puede no ser secuencial, extraer del nombre del archivo
+          const slideNumber = slideIndex + 1 // Por defecto usar índice + 1
+          const slideRelName = `ppt/slides/_rels/slide${slideNumber}.xml.rels`
+          const slideRelEntry = zip.getEntry(slideRelName)
+          
+          if (slideRelEntry) {
+            const relContent = slideRelEntry.getData().toString('utf8')
+            const relResult = await parseStringPromise(relContent)
+            
+            // Buscar la relación con el embedId
+            if (relResult['Relationships'] && relResult['Relationships']['Relationship']) {
+              const relationships = Array.isArray(relResult['Relationships']['Relationship']) 
+                ? relResult['Relationships']['Relationship'] 
+                : [relResult['Relationships']['Relationship']]
+              
+              for (const rel of relationships) {
+                if (rel['$'] && rel['$']['Id'] === embedId) {
+                  const target = rel['$']['Target']
+                  // La imagen está en ppt/media/ o en la ruta relativa
+                  const imagePath = target.startsWith('../') ? target.replace('../', 'ppt/') : `ppt/${target}`
+                  const imageEntry = zip.getEntry(imagePath)
+                  
+                  if (imageEntry) {
+                    const imageBuffer = imageEntry.getData()
+                    const ext = path.extname(target).toLowerCase() || '.png'
+                    const imageName = `pptx-bg-${Date.now()}-slide${slideIndex + 1}${ext}`
+                    const fullImagePath = path.join(imagesDir, imageName)
+                    await fs.writeFile(fullImagePath, imageBuffer)
+                    
+                    const backendUrl = getBackendUrl(req)
+                    logger.debug(`✅ Fondo de diapositiva ${slideIndex + 1} extraído: ${imageName}`)
+                    return `${backendUrl}/images/${imageName}`
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    logger.error(`Error extrayendo fondo de diapositiva ${slideIndex + 1}:`, error.message)
+  }
+  return null
+}
+
 // Extraer contenido de PowerPoint
 async function extractFromPptx(fileBuffer, req = null) {
   const sections = []
@@ -1014,6 +1078,9 @@ async function extractFromPptx(fileBuffer, req = null) {
       const title = titleMatch ? titleMatch[1].trim() : `Diapositiva ${i + 1}`
       const content = slideText.trim()
 
+      // Extraer fondo de la diapositiva
+      const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
+
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
       const slideImages = []
       const imagesPerSlide = Math.ceil(allImages.length / slideXmlEntries.length)
@@ -1026,6 +1093,7 @@ async function extractFromPptx(fileBuffer, req = null) {
         title,
         content,
         images: slideImages,
+        backgroundImage, // Imagen de fondo de la diapositiva
         level: 1 // Todas las diapositivas son nivel 1 por defecto
       })
     }
@@ -1317,6 +1385,17 @@ router.post('/', upload.single('file'), async (req, res) => {
       // Asegurar que description no esté vacío - usar content si description está vacío
       const finalDescription = description || section.content || preview || ''
       
+      // Construir estilo del widget (incluir fondo si existe, especialmente para PowerPoint)
+      const widgetStyle = {
+        backgroundColor: undefined, // Se puede sobrescribir
+        borderColor: undefined,
+        textColor: undefined,
+        borderRadius: undefined,
+        backgroundImage: section.backgroundImage || undefined, // Fondo de PowerPoint
+        backgroundSize: section.backgroundImage ? 'cover' : undefined,
+        backgroundPosition: section.backgroundImage ? 'center' : undefined,
+      }
+
       return {
         title: section.title || `Sección ${index + 1}`,
         preview: preview || (finalDescription.length > 150 ? finalDescription.substring(0, 150) + '...' : finalDescription), // Preview preservado
@@ -1324,6 +1403,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         additionalInfo, // Sin información adicional (todo en description)
         category: section.category,
         images: sectionImages, // Imágenes específicas de esta sección, correctamente asociadas
+        style: widgetStyle, // Estilo con fondo si existe
         order: index,
         level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
         displayMode: 'resumen' // Por defecto mostrar resumen, el admin puede cambiarlo a 'completo'

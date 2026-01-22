@@ -95,9 +95,19 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         ref={ref}
         onClick={() => onWidgetClick(widget)}
         style={{
-        background: defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        // Si hay imagen de fondo (PowerPoint), usarla; si no, usar color de fondo
+        backgroundImage: defaultStyle.backgroundImage 
+          ? `url(${ensureHttps(defaultStyle.backgroundImage)})` 
+          : undefined,
+        backgroundSize: defaultStyle.backgroundSize || (defaultStyle.backgroundImage ? 'cover' : undefined),
+        backgroundPosition: defaultStyle.backgroundPosition || (defaultStyle.backgroundImage ? 'center' : undefined),
+        backgroundRepeat: defaultStyle.backgroundImage ? 'no-repeat' : undefined,
+        // Si hay fondo, agregar overlay semi-transparente para legibilidad del texto
+        backgroundColor: defaultStyle.backgroundImage 
+          ? 'rgba(0, 0, 0, 0.4)' // Overlay oscuro para legibilidad
+          : (defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)'),
+        backdropFilter: defaultStyle.backgroundImage ? 'none' : 'blur(10px)', // No blur si hay fondo de imagen
+        WebkitBackdropFilter: defaultStyle.backgroundImage ? 'none' : 'blur(10px)',
         border: `1px solid ${defaultStyle.borderColor || 'rgba(255, 255, 255, 0.2)'}`,
         borderRadius: defaultStyle.borderRadius ? `${defaultStyle.borderRadius}px` : '16px',
         padding: '2rem',

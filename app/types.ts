@@ -16,6 +16,9 @@ export interface WidgetStyle {
   borderColor?: string
   textColor?: string
   borderRadius?: number
+  backgroundImage?: string // URL de imagen de fondo (para PowerPoint)
+  backgroundSize?: 'cover' | 'contain' | 'auto' // Tamaño del fondo
+  backgroundPosition?: string // Posición del fondo
 }
 
 export type WidgetCategory = 
