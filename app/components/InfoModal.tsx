@@ -56,16 +56,21 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
         }
 
         .modal-content {
-          background: rgba(255, 255, 255, 0.95);
-          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-radius: 24px;
           padding: 3rem;
           max-width: 800px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
           position: relative;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 
+                      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+                      0 8px 32px rgba(31, 38, 135, 0.37);
           animation: slideUp 0.3s ease;
+          border: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .modal-content.with-background {
@@ -84,8 +89,10 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           position: absolute;
           top: 1rem;
           right: 1rem;
-          background: rgba(0, 0, 0, 0.1);
-          border: none;
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           border-radius: 50%;
           width: 40px;
           height: 40px;
@@ -96,28 +103,37 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           justify-content: center;
           transition: all 0.3s ease;
           z-index: 10;
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .modal-close:hover {
-          background: rgba(0, 0, 0, 0.2);
-          transform: scale(1.1);
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.1) rotate(90deg);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
         .modal-title {
           font-size: 2.5rem;
           font-weight: bold;
           margin-bottom: 1.5rem;
-          color: #1a1a1a;
+          color: #ffffff;
           line-height: 1.2;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .modal-description {
           font-size: 1.2rem;
           line-height: 1.8;
           margin-bottom: 2rem;
-          color: #333;
+          color: rgba(255, 255, 255, 0.95);
           word-wrap: break-word;
           overflow-wrap: break-word;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
         
         .modal-description img {
@@ -144,19 +160,24 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
         }
 
         .modal-additional {
-          background: rgba(0, 0, 0, 0.05);
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           padding: 1.5rem;
           border-radius: 12px;
           margin-top: 2rem;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         .modal-additional-text {
           font-size: 1rem;
           line-height: 1.6;
-          color: #555;
+          color: rgba(255, 255, 255, 0.9);
           white-space: pre-wrap; /* PRESERVAR: espacios, saltos de línea, formato original */
           word-wrap: break-word;
           overflow-wrap: break-word;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         @keyframes fadeIn {
@@ -326,14 +347,19 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
             <div style={{
               marginTop: '2rem',
               padding: '1.5rem',
-              background: 'rgba(0, 0, 0, 0.05)',
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
               borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
             }}>
               <h3 style={{
                 fontSize: '1.3rem',
                 fontWeight: '600',
                 marginBottom: '1rem',
-                color: '#1a1a1a',
+                color: '#ffffff',
+                textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
               }}>
                 📎 Archivos Adjuntos
               </h3>
@@ -346,11 +372,13 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
                   <div
                     key={attachment.id}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.9)',
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
                       borderRadius: '8px',
                       padding: '1rem',
-                      border: '1px solid rgba(0, 0, 0, 0.1)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                     }}
                   >
                     {/* Vista previa - Siempre mostrar si existe */}
@@ -387,14 +415,15 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
                     {/* Información del archivo */}
                     <div style={{
                       fontSize: '0.9rem',
-                      color: '#333',
+                      color: 'rgba(255, 255, 255, 0.95)',
                       wordBreak: 'break-word',
                       marginBottom: '0.5rem',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
                     }}>
                       <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
                         {attachment.filename}
                       </div>
-                      <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)' }}>
                         {attachment.type.toUpperCase()}
                         {attachment.size && ` • ${(attachment.size / 1024).toFixed(1)} KB`}
                       </div>
