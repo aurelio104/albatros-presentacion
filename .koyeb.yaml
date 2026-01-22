@@ -2,3 +2,4 @@
 build:
   type: dockerfile
   dockerfile_path: backend/Dockerfile
+  dockerfile_context: .

@@ -3,14 +3,15 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package*.json ./
+# Copiar archivos de dependencias del backend
+COPY backend/package*.json ./
 
 # Instalar todas las dependencias
 RUN npm ci && npm cache clean --force
 
-# Copiar código fuente
-COPY . .
+# Copiar código fuente del backend
+COPY backend/src ./src
+COPY backend/package*.json ./
 
 # Stage de producción
 FROM node:18-alpine AS production
@@ -28,6 +29,10 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src ./src
+
+# Asegurar que los directorios existen y tienen permisos correctos
+RUN mkdir -p data public/images public/files data/presentations data/backups && \
+    chmod -R 755 data public
 
 # Crear directorios necesarios (también se crearán en runtime si se monta un volumen)
 RUN mkdir -p data public/images public/files data/presentations data/backups
