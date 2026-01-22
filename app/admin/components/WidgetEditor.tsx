@@ -154,27 +154,51 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
 
             <div>
               <label style={labelStyle}>Modo de Visualización</label>
-              <select
-                value={editedWidget.displayMode || 'resumen'}
-                onChange={(e) => handleChange('displayMode', e.target.value)}
-                style={inputStyle}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)'
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)'
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                <option value="resumen">Resumen (muestra preview corto)</option>
-                <option value="completo">Completo (muestra descripción completa)</option>
-              </select>
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', marginTop: '0.5rem' }}>
-                {editedWidget.displayMode === 'completo' 
-                  ? 'El widget mostrará la descripción completa en la tarjeta'
-                  : 'El widget mostrará solo el preview (texto corto)'}
-              </p>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem',
+                marginTop: '0.5rem',
+                padding: '1rem',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  fontSize: '1rem',
+                  fontWeight: '500'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={editedWidget.displayMode === 'resumen'}
+                    onChange={(e) => {
+                      handleChange('displayMode', e.target.checked ? 'resumen' : 'completo')
+                    }}
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      accentColor: 'rgba(59, 130, 246, 0.8)',
+                    }}
+                  />
+                  <span>📄 Resumen</span>
+                </label>
+                <p style={{ 
+                  fontSize: '0.85rem', 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  margin: 0,
+                  flex: 1
+                }}>
+                  {editedWidget.displayMode === 'resumen' 
+                    ? '✅ Mostrando preview corto en la tarjeta'
+                    : '✅ Mostrando descripción completa en la tarjeta'}
+                </p>
+              </div>
             </div>
 
             <div>
