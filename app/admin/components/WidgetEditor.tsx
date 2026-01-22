@@ -89,6 +89,59 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
     onUpdate(updated)
   }
 
+  const [uploadingAttachment, setUploadingAttachment] = useState(false)
+
+  const handleAttachmentUpload = async (file: File) => {
+    setUploadingAttachment(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+      const response = await fetch(`${backendUrl}/api/attachments/upload`, {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        throw new Error('Error al subir archivo')
+      }
+      
+      const data = await response.json()
+      if (data.success && data.attachment) {
+        const attachments = editedWidget.content.attachments || []
+        const updated = {
+          ...editedWidget,
+          content: {
+            ...editedWidget.content,
+            attachments: [...attachments, data.attachment],
+          },
+        }
+        setEditedWidget(updated)
+        onUpdate(updated)
+        alert('Archivo adjuntado exitosamente')
+      }
+    } catch (error) {
+      console.error('Error subiendo adjunto:', error)
+      alert('Error al subir el archivo. Por favor, intenta de nuevo.')
+    } finally {
+      setUploadingAttachment(false)
+    }
+  }
+
+  const removeAttachment = (index: number) => {
+    const attachments = editedWidget.content.attachments || []
+    const updated = {
+      ...editedWidget,
+      content: {
+        ...editedWidget.content,
+        attachments: attachments.filter((_, i) => i !== index),
+      },
+    }
+    setEditedWidget(updated)
+    onUpdate(updated)
+  }
+
   const animationTypes = [
     { value: 'none', label: 'Sin animación' },
     { value: 'fadeIn', label: 'Fade In' },
