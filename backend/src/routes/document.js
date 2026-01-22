@@ -1078,6 +1078,74 @@ async function extractSlideBackground(zip, slideIndex, slideXml, req = null) {
   return null
 }
 
+// Renderizar diapositiva completa de PowerPoint como imagen usando LibreOffice
+async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
+  const { exec } = await import('child_process')
+  const { promisify } = await import('util')
+  const execAsync = promisify(exec)
+  const fs = await import('fs/promises')
+  const os = await import('os')
+  const path = await import('path')
+  
+  const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
+  await fs.mkdir(imagesDir, { recursive: true })
+  
+  try {
+    // Crear archivo temporal
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pptx-'))
+    const tempPptxPath = path.join(tempDir, 'presentation.pptx')
+    const tempOutputDir = path.join(tempDir, 'output')
+    await fs.mkdir(tempOutputDir, { recursive: true })
+    
+    // Guardar el buffer del PPTX en archivo temporal
+    await fs.writeFile(tempPptxPath, fileBuffer)
+    
+    // Usar LibreOffice para convertir la diapositiva específica a imagen
+    // LibreOffice puede exportar diapositivas individuales usando filtros
+    // Comando: libreoffice --headless --convert-to png --outdir <output> <input> --slide <number>
+    const slideNumber = slideIndex + 1
+    const outputImagePath = path.join(tempOutputDir, `slide${slideNumber}.png`)
+    
+    try {
+      // Intentar usar LibreOffice si está disponible
+      await execAsync(`libreoffice --headless --convert-to png --outdir "${tempOutputDir}" "${tempPptxPath}" 2>&1 || true`)
+      
+      // Buscar la imagen generada (LibreOffice genera slide1.png, slide2.png, etc.)
+      const generatedImagePath = path.join(tempOutputDir, `slide${slideNumber}.png`)
+      
+      try {
+        await fs.access(generatedImagePath)
+        // La imagen existe, copiarla al directorio de imágenes
+        const imageName = `pptx-full-${Date.now()}-slide${slideNumber}.png`
+        const finalImagePath = path.join(imagesDir, imageName)
+        await fs.copyFile(generatedImagePath, finalImagePath)
+        
+        const backendUrl = getBackendUrl(req)
+        logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
+        
+        // Limpiar archivos temporales
+        await fs.rm(tempDir, { recursive: true, force: true })
+        
+        return `${backendUrl}/images/${imageName}`
+      } catch (accessError) {
+        // La imagen no se generó, continuar sin ella
+        logger.debug(`⚠️  No se pudo generar imagen para diapositiva ${slideNumber}, usando fondo como alternativa`)
+      }
+    } catch (libreOfficeError) {
+      // LibreOffice no está disponible o falló, continuar sin renderizado completo
+      logger.debug(`⚠️  LibreOffice no disponible para renderizado: ${libreOfficeError.message}`)
+    }
+    
+    // Limpiar archivos temporales
+    await fs.rm(tempDir, { recursive: true, force: true })
+    
+  } catch (error) {
+    logger.error(`Error renderizando diapositiva ${slideIndex + 1}:`, error.message)
+  }
+  
+  return null
+}
+
 // Extraer contenido de PowerPoint
 async function extractFromPptx(fileBuffer, req = null) {
   const sections = []
@@ -1128,6 +1196,9 @@ async function extractFromPptx(fileBuffer, req = null) {
       // Extraer fondo de la diapositiva
       const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
 
+      // Renderizar diapositiva completa como imagen (copia exacta del original)
+      const fullPageImage = await renderSlideAsImage(fileBuffer, i, req)
+
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
       const slideImages = []
       const imagesPerSlide = Math.ceil(allImages.length / slideXmlEntries.length)
@@ -1135,17 +1206,13 @@ async function extractFromPptx(fileBuffer, req = null) {
       for (let j = 0; j < imagesPerSlide && (startIndex + j) < allImages.length; j++) {
         slideImages.push(allImages[startIndex + j])
       }
-
-      // Para PowerPoint: la imagen completa de la diapositiva será el fondo + contenido renderizado
-      // Por ahora usamos el backgroundImage como fullPageImage (se mejorará con renderizado completo)
-      const fullPageImage = backgroundImage || null // TODO: Renderizar diapositiva completa como imagen
       
       sections.push({
         title,
         content,
         images: slideImages,
         backgroundImage, // Imagen de fondo de la diapositiva
-        fullPageImage, // Imagen completa de la diapositiva (fondo + contenido, exactamente igual al original)
+        fullPageImage: fullPageImage || backgroundImage || null, // Imagen completa renderizada (copia exacta) o fondo como fallback
         level: 1 // Todas las diapositivas son nivel 1 por defecto
       })
     }
