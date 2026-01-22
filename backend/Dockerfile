@@ -15,6 +15,13 @@ COPY . .
 # Stage de producción
 FROM node:18-alpine AS production
 
+# Instalar LibreOffice para renderizar PowerPoint a imágenes
+RUN apk add --no-cache \
+    libreoffice \
+    ttf-dejavu \
+    ttf-liberation \
+    && rm -rf /var/cache/apk/*
+
 WORKDIR /app
 
 # Copiar solo dependencias y código desde builder
