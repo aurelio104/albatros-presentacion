@@ -264,11 +264,12 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
   )
   
   // Nivel 2: Subtítulos (medianos, pueden tener números como "1.1", "2.3", etc.)
+  // IMPORTANTE: NO crear widgets separados para estos, son parte del contenido del capítulo
   const isLevel2 = (
     // Número.Número seguido de punto y texto (ej: "1.1 Prioridad", "2.3 Procesos")
     /^\d+\.\d+\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
-    // Número seguido de punto y texto
-    /^\d+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    // Número seguido de punto y texto (pero NO si es "Capítulo X" o "Anexo X")
+    (/^\d+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) && !/^(CAPÍTULO|CAPITULO|ANEXO)\s+\d+/i.test(trimmed)) ||
     // Letra seguida de punto y texto
     /^[a-z][\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
     // Título en mayúsculas pero más largo
@@ -290,14 +291,18 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
     previousLine.trim().length < 30
   )
   
-  // Si detecta "Capítulo" o "Anexo", siempre es nivel 1
+  // Si detecta "Capítulo" o "Anexo", siempre es nivel 1 (crea widget separado)
   if (/^(CAPÍTULO|CAPITULO|ANEXO)\s+\d+/i.test(trimmed)) {
     return 1
   }
   
+  // Títulos principales (nivel 1) crean widgets separados
   if (isLevel1 && hasContentAfter) return 1
-  if (isLevel2 && hasContentAfter) return 2
-  if (isLevel3 && hasContentAfter) return 3
+  
+  // Subtítulos (nivel 2 y 3) NO crean widgets separados, son parte del contenido
+  // Retornar null para que se agreguen al contenido de la sección actual
+  if (isLevel2 && hasContentAfter) return null // NO crear widget, agregar al contenido
+  if (isLevel3 && hasContentAfter) return null // NO crear widget, agregar al contenido
   
   // Si no cumple criterios estrictos pero parece título por contexto
   if (length < 100 && length > 5 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && hasContentAfter && !hasTitleBefore) {
