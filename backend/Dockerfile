@@ -11,7 +11,6 @@ RUN npm ci && npm cache clean --force
 
 # Copiar código fuente del backend
 COPY backend/src ./src
-COPY backend/package*.json ./
 
 # Stage de producción
 FROM node:18-alpine AS production
