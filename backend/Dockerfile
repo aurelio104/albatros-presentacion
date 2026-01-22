@@ -6,8 +6,8 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar todas las dependencias (necesarias para build)
-RUN npm ci --only=production && npm cache clean --force
+# Instalar todas las dependencias
+RUN npm ci && npm cache clean --force
 
 # Copiar código fuente
 COPY . .
@@ -28,7 +28,6 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src ./src
-COPY --from=builder /app/backend/koyeb.json ./koyeb.json
 
 # Crear directorios necesarios (también se crearán en runtime si se monta un volumen)
 RUN mkdir -p data public/images public/files data/presentations data/backups

@@ -1,0 +1,4 @@
+# Configuración de Koyeb para usar Dockerfile
+build:
+  type: dockerfile
+  dockerfile_path: backend/Dockerfile
