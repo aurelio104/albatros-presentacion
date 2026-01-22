@@ -1201,6 +1201,8 @@ async function extractFromPptx(fileBuffer, req = null) {
         const numB = parseInt(b.entryName.match(/slide(\d+)\.xml/)?.[1] || '0')
         return numA - numB // Orden ascendente: slide1, slide2, slide3...
       })
+    
+    logger.debug(`📊 Diapositivas XML encontradas (${slideXmlEntries.length}): ${slideXmlEntries.map((e, i) => `${i + 1}=${e.entryName}`).join(', ')}`)
 
     for (let i = 0; i < slideXmlEntries.length; i++) {
       const entry = slideXmlEntries[i]
