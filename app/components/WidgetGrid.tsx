@@ -199,7 +199,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         if (hasImagesArray && !hasHTML && (widget.displayMode || 'resumen') === 'completo') {
           const imagesHTML = widget.content.images.map((img: string) => {
             const httpsSrc = ensureHttps(img)
-            return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
+            return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.onerror=null; this.style.display='none';" onload="this.style.display='block';" />`
           }).join('')
           finalContent = finalContent + (finalContent ? '\n\n' : '') + imagesHTML
         }
@@ -230,7 +230,8 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
                   .replace(/\n/g, '<br>')
                   .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
                     const httpsSrc = ensureHttps(src)
-                    return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
+                    // Manejar errores de carga de imagen silenciosamente
+                    return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.onerror=null; this.style.display='none';" onload="this.style.display='block';" />`
                   })
               }}
             />

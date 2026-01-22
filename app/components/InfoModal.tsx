@@ -293,7 +293,7 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
             if (hasImagesArray && !hasHTML) {
               const imagesHTML = widget.content.images.map((img: string) => {
                 const httpsSrc = ensureHttps(img)
-                return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.style.display='none'" />`
+                return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.onerror=null; this.style.display='none';" onload="this.style.display='block';" />`
               }).join('')
               content = content + (content ? '\n\n' : '') + imagesHTML
             }
@@ -307,7 +307,8 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
                     .replace(/\n/g, '<br>') // Saltos de línea simples
                     .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
                       const httpsSrc = ensureHttps(src)
-                      return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.style.display='none'" />`
+                      // Manejar errores de carga de imagen silenciosamente
+                      return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" loading="lazy" onerror="this.onerror=null; this.style.display='none';" onload="this.style.display='block';" />`
                     })
                 }}
               />
