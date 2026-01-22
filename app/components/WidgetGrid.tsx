@@ -3,6 +3,7 @@
 import { WidgetData, WidgetCategory } from '../types'
 import { useEffect, useRef, useState, useMemo, memo } from 'react'
 import dynamic from 'next/dynamic'
+import { ensureHttps } from '../utils/imageUrl'
 
 interface WidgetGridProps {
   widgets: WidgetData[]
@@ -78,10 +79,22 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
   const animationStyle = getAnimationStyle(widget.animation, isVisible)
 
   return (
-    <div
-      ref={ref}
-      onClick={() => onWidgetClick(widget)}
-      style={{
+    <>
+      <style jsx>{`
+        .widget-content img {
+          max-width: 100%;
+          height: auto;
+          margin: 0.5rem 0;
+          border-radius: 8px;
+          display: block;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+      `}</style>
+      <div
+        ref={ref}
+        onClick={() => onWidgetClick(widget)}
+        style={{
         background: defaultStyle.backgroundColor || 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
@@ -140,26 +153,67 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
       >
         {widget.title}
       </h2>
-      <p
-        style={{
-          color: defaultStyle.textColor ? `${defaultStyle.textColor}dd` : 'rgba(255, 255, 255, 0.9)',
-          fontSize: 'clamp(0.9rem, 3vw, 1rem)',
-          textAlign: 'center',
-          lineHeight: '1.5',
-          wordWrap: 'break-word',
-          overflowWrap: 'break-word',
-          wordBreak: 'break-word',
-          hyphens: 'auto',
-          whiteSpace: 'pre-wrap', // PRESERVAR: espacios, saltos de línea, formato original
-          maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
-          overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
-          textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
-        }}
-      >
-        {widget.displayMode === 'completo' 
+      {/* Helper para detectar si el contenido tiene HTML (imágenes) */}
+      {(() => {
+        const content = widget.displayMode === 'completo' 
           ? widget.content.description || widget.preview
-          : widget.preview}
-      </p>
+          : widget.preview
+        
+        const hasHTML = content && /<img\s+src=/i.test(content)
+        
+        if (hasHTML) {
+          // Renderizar como HTML para mostrar imágenes
+          return (
+            <div
+              className="widget-content"
+              style={{
+                color: defaultStyle.textColor ? `${defaultStyle.textColor}dd` : 'rgba(255, 255, 255, 0.9)',
+                fontSize: 'clamp(0.9rem, 3vw, 1rem)',
+                textAlign: 'center',
+                lineHeight: '1.5',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                hyphens: 'auto',
+                maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
+                overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
+                textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
+              }}
+              dangerouslySetInnerHTML={{
+                __html: content
+                  .replace(/\n\n/g, '<br><br>')
+                  .replace(/\n/g, '<br>')
+                  .replace(/<img\s+src="([^"]+)"[^>]*>/gi, (match, src) => {
+                    const httpsSrc = ensureHttps(src)
+                    return `<img src="${httpsSrc}" alt="Imagen" style="max-width: 100%; height: auto; margin: 0.5rem 0; border-radius: 8px; display: block; border: 2px solid rgba(255, 255, 255, 0.3);" loading="lazy" onerror="this.style.display='none'" />`
+                  })
+              }}
+            />
+          )
+        } else {
+          // Renderizar como texto plano
+          return (
+            <p
+              style={{
+                color: defaultStyle.textColor ? `${defaultStyle.textColor}dd` : 'rgba(255, 255, 255, 0.9)',
+                fontSize: 'clamp(0.9rem, 3vw, 1rem)',
+                textAlign: 'center',
+                lineHeight: '1.5',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+                hyphens: 'auto',
+                whiteSpace: 'pre-wrap', // PRESERVAR: espacios, saltos de línea, formato original
+                maxHeight: widget.displayMode === 'resumen' ? '150px' : 'none',
+                overflow: widget.displayMode === 'resumen' ? 'hidden' : 'visible',
+                textOverflow: widget.displayMode === 'resumen' ? 'ellipsis' : 'clip',
+              }}
+            >
+              {content}
+            </p>
+          )
+        }
+      })()}
       <div
         style={{
           marginTop: '1.5rem',
@@ -171,6 +225,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         Click para más información →
       </div>
     </div>
+    </>
   )
 }
 
