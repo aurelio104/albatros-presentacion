@@ -125,6 +125,7 @@ function WidgetItem({ widget, onWidgetClick }: { widget: WidgetData; onWidgetCli
         minWidth: '280px',
         maxWidth: '320px',
         width: '100%',
+        margin: '0 auto',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
@@ -306,6 +307,8 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           min-width: 280px;
           max-width: 320px;
           flex: 0 1 auto;
+          display: flex;
+          justify-content: center;
         }
 
         /* Large screens */
@@ -337,6 +340,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           .widget-grid {
             padding-top: clamp(90px, 15vh, 110px);
             align-items: flex-start;
+            justify-content: center;
             padding-bottom: clamp(1rem, 3vh, 2rem);
             gap: clamp(1rem, 2vw, 1.5rem);
           }
@@ -344,6 +348,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
             min-width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
             max-width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
             width: calc(50% - clamp(0.5rem, 1vw, 0.75rem));
+            margin: 0 auto;
           }
         }
 
@@ -351,6 +356,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         @media (max-width: 640px) {
           .widget-grid {
             padding-top: clamp(100px, 20vh, 180px);
+            justify-content: center;
             gap: clamp(1rem, 2vw, 1.25rem);
             padding-bottom: clamp(1rem, 3vh, 2rem);
           }
@@ -358,6 +364,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
             min-width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
             max-width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
             width: calc(50% - clamp(0.5rem, 1vw, 0.625rem));
+            margin: 0 auto;
           }
         }
 
@@ -365,6 +372,8 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         @media (max-width: 480px) {
           .widget-grid {
             padding-top: clamp(80px, 20vh, 100px);
+            justify-content: center;
+            align-items: center;
             gap: 1rem;
             padding-left: clamp(0.75rem, 3vw, 1rem);
             padding-right: clamp(0.75rem, 3vw, 1rem);
@@ -374,6 +383,10 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
             min-width: 100%;
             max-width: 100%;
             width: 100%;
+            max-width: calc(100% - 0px);
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
           }
         }
 
@@ -381,6 +394,8 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
         @media (max-width: 360px) {
           .widget-grid {
             padding-top: clamp(70px, 18vh, 90px);
+            justify-content: center;
+            align-items: center;
             gap: 0.75rem;
             padding-left: clamp(0.5rem, 2vw, 0.75rem);
             padding-right: clamp(0.5rem, 2vw, 0.75rem);
@@ -390,6 +405,9 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
             min-width: 100%;
             max-width: 100%;
             width: 100%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
           }
         }
 
@@ -398,6 +416,7 @@ export default function WidgetGrid({ widgets, onWidgetClick }: WidgetGridProps) 
           .widget-grid {
             padding-top: 70px;
             align-items: flex-start;
+            justify-content: center;
             padding-bottom: 1rem;
           }
         }
