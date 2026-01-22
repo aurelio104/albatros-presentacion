@@ -10,6 +10,7 @@ import ImageUploader from './ImageUploader'
 import SettingsEditor from './SettingsEditor'
 import DocumentProcessor from './DocumentProcessor'
 import PresentationsManager from './PresentationsManager'
+import StorageVerifier from './StorageVerifier'
 
 interface AdminDashboardProps {
   onLogout: () => void
