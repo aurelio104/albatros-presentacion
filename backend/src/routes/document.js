@@ -246,20 +246,27 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
   const trimmed = line.trim()
   const length = trimmed.length
   
-  // Nivel 1: Títulos principales (muy cortos, mayúsculas, o con formato especial)
+  // Patrones específicos para títulos de documentos técnicos
+  // Nivel 1: Títulos principales (Capítulo, Anexo, Introducción, etc.)
   const isLevel1 = (
+    // "Capítulo X. Título" o "Anexo X. Título"
+    /^(CAPÍTULO|CAPITULO|ANEXO|ANEXO)\s+\d+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    // "Capítulo X" seguido de título en la misma línea
+    /^(CAPÍTULO|CAPITULO|ANEXO)\s+\d+/.test(trimmed) ||
     // Todo mayúsculas y corto
     (/^[A-ZÁÉÍÓÚÑ\s]{3,50}$/.test(trimmed) && trimmed.length < 50) ||
     // Título seguido de dos puntos al final
     (trimmed.endsWith(':') && length < 60 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed)) ||
     // Títulos comunes de documentos técnicos
-    /^(INFORME|ANÁLISIS|CONCLUSIÓN|RECOMENDACIÓN|OBSERVACIONES|INTRODUCCIÓN|RESUMEN|OBJETIVO|METODOLOGÍA|RESULTADOS|DISCUSIÓN)$/i.test(trimmed) ||
+    /^(INFORME|ANÁLISIS|CONCLUSIÓN|RECOMENDACIÓN|OBSERVACIONES|INTRODUCCIÓN|RESUMEN|OBJETIVO|METODOLOGÍA|RESULTADOS|DISCUSIÓN|DECLARACIÓN|REGISTRO)$/i.test(trimmed) ||
     // Números romanos seguidos de título
     /^[IVX]+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed)
   )
   
-  // Nivel 2: Subtítulos (medianos, pueden tener números)
+  // Nivel 2: Subtítulos (medianos, pueden tener números como "1.1", "2.3", etc.)
   const isLevel2 = (
+    // Número.Número seguido de punto y texto (ej: "1.1 Prioridad", "2.3 Procesos")
+    /^\d+\.\d+\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
     // Número seguido de punto y texto
     /^\d+[\.\)]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
     // Letra seguida de punto y texto
@@ -268,25 +275,32 @@ function detectTitleLevel(line, previousLine, nextLine, lineIndex, allLines) {
     (/^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && length > 20 && length < 80 && !trimmed.includes('.'))
   )
   
-  // Nivel 3: Sub-subtítulos (viñetas, guiones)
+  // Nivel 3: Sub-subtítulos (viñetas, guiones, letras minúsculas)
   const isLevel3 = (
     /^[•\-\*]\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
-    /^[a-z]\)\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed)
+    /^[a-z]\)\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed) ||
+    // Número.Número.Número (ej: "1.1.1")
+    /^\d+\.\d+\.\d+\s+[A-ZÁÉÍÓÚÑ]/.test(trimmed)
   )
   
   // Contexto adicional: verificar si la línea siguiente es contenido
-  const hasContentAfter = nextLine && nextLine.trim().length > 50
+  const hasContentAfter = nextLine && nextLine.trim().length > 20
   const hasTitleBefore = previousLine && (
     /^[A-ZÁÉÍÓÚÑ]/.test(previousLine.trim()) ||
     previousLine.trim().length < 30
   )
+  
+  // Si detecta "Capítulo" o "Anexo", siempre es nivel 1
+  if (/^(CAPÍTULO|CAPITULO|ANEXO)\s+\d+/i.test(trimmed)) {
+    return 1
+  }
   
   if (isLevel1 && hasContentAfter) return 1
   if (isLevel2 && hasContentAfter) return 2
   if (isLevel3 && hasContentAfter) return 3
   
   // Si no cumple criterios estrictos pero parece título por contexto
-  if (length < 80 && length > 5 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && hasContentAfter && !hasTitleBefore) {
+  if (length < 100 && length > 5 && /^[A-ZÁÉÍÓÚÑ]/.test(trimmed) && hasContentAfter && !hasTitleBefore) {
     return 2 // Asumir nivel 2 por defecto
   }
   
