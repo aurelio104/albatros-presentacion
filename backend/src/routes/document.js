@@ -1597,9 +1597,28 @@ router.post('/', upload.single('file'), async (req, res) => {
         fullPageImage: section.fullPageImage || undefined, // Imagen completa de la página/diapositiva (exactamente igual al original)
       }
 
-      // Para PowerPoint: usar slideNumber para ordenamiento preciso
-      // Para otros archivos: usar index
-      const widgetOrder = section.slideNumber !== undefined ? section.slideNumber - 1 : index
+      // Para todos los tipos de archivo: usar número de sección/página/hoja/diapositiva para ordenamiento preciso
+      // Esto garantiza que el orden se mantenga exactamente como en el documento original
+      let widgetOrder = index // Fallback por defecto
+      
+      if (section.slideNumber !== undefined) {
+        // PowerPoint: usar slideNumber
+        widgetOrder = section.slideNumber - 1
+      } else if (section.pageNumber !== undefined) {
+        // PDF: usar pageNumber
+        widgetOrder = section.pageNumber - 1
+      } else if (section.sectionNumber !== undefined) {
+        // Word: usar sectionNumber
+        widgetOrder = section.sectionNumber - 1
+      } else if (section.sheetNumber !== undefined) {
+        // Excel: usar sheetNumber
+        widgetOrder = section.sheetNumber - 1
+      }
+      
+      // Log para verificar ordenamiento
+      if (section.slideNumber || section.pageNumber || section.sectionNumber || section.sheetNumber) {
+        logger.debug(`📋 Widget orden: ${widgetOrder} para "${section.title}" (${section.slideNumber ? 'slide' : section.pageNumber ? 'page' : section.sectionNumber ? 'section' : 'sheet'}: ${section.slideNumber || section.pageNumber || section.sectionNumber || section.sheetNumber})`)
+      }
 
       return {
         title: section.title || `Sección ${index + 1}`,
