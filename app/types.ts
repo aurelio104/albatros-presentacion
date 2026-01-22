@@ -67,6 +67,7 @@ export interface AppSettings {
     opacity: number
     color: string
   }
+  isVisible?: boolean // Control de visibilidad del proyecto (true = visible, false = oculto)
 }
 
 export interface AppContent {

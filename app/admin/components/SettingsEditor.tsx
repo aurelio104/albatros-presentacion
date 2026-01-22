@@ -39,6 +39,8 @@ export default function SettingsEditor({ settings, onUpdate }: SettingsEditorPro
     
     if (path === 'videoBackground') {
       updated.videoBackground = value
+    } else if (path === 'isVisible') {
+      updated.isVisible = value
     } else if (path.startsWith('logo.')) {
       const field = path.split('.')[1]
       updated.logo = { ...updated.logo, [field]: value }
@@ -58,6 +60,70 @@ export default function SettingsEditor({ settings, onUpdate }: SettingsEditorPro
       </h2>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {/* Control de Visibilidad */}
+        <div>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
+            Visibilidad del Proyecto
+          </h3>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '1rem',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+          }}>
+            <label style={{
+              ...labelStyle,
+              margin: 0,
+              flex: 1,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+            }}>
+              <span style={{ fontSize: '1rem', fontWeight: '500' }}>
+                {editedSettings.isVisible !== false ? '✅ Proyecto Visible' : '❌ Proyecto Oculto'}
+              </span>
+              <div
+                onClick={() => handleChange('isVisible', !(editedSettings.isVisible !== false))}
+                style={{
+                  position: 'relative',
+                  width: '60px',
+                  height: '32px',
+                  background: editedSettings.isVisible !== false ? 'rgba(34, 197, 94, 0.8)' : 'rgba(156, 163, 175, 0.6)',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: editedSettings.isVisible !== false 
+                    ? '0 0 20px rgba(34, 197, 94, 0.4)' 
+                    : 'none',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    left: editedSettings.isVisible !== false ? '30px' : '2px',
+                    width: '24px',
+                    height: '24px',
+                    background: '#ffffff',
+                    borderRadius: '50%',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                  }}
+                />
+              </div>
+            </label>
+          </div>
+          <p style={{ marginTop: '0.75rem', color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', paddingLeft: '1rem' }}>
+            {editedSettings.isVisible !== false 
+              ? 'El proyecto está visible para todos los visitantes' 
+              : 'El proyecto está oculto. Los visitantes verán un mensaje indicando que no está disponible'}
+          </p>
+        </div>
         {/* Video de Fondo */}
         <div>
           <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>

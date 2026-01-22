@@ -144,6 +144,43 @@ export default function Home() {
     )
   }
 
+  // Verificar si el proyecto está visible
+  if (content.settings.isVisible === false) {
+    return (
+      <main style={{ 
+        position: 'relative', 
+        width: '100vw', 
+        height: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: '#fff',
+        padding: '2rem',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          borderRadius: '20px',
+          padding: '3rem',
+          maxWidth: '600px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🔒</div>
+          <h1 style={{ fontSize: isMobile ? '1.75rem' : '2.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>
+            Proyecto No Disponible
+          </h1>
+          <p style={{ fontSize: isMobile ? '1rem' : '1.2rem', lineHeight: '1.6', opacity: 0.9 }}>
+            El proyecto está temporalmente oculto. Por favor, contacta al administrador para más información.
+          </p>
+        </div>
+      </main>
+    )
+  }
+
   // Ordenar widgets por order si existe
   const sortedWidgets = [...content.widgets].sort((a, b) => {
     const orderA = a.order ?? a.id
