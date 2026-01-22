@@ -35,12 +35,22 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       if (response.ok) {
         const data = await response.json()
         // Normalizar URLs HTTP a HTTPS para todas las imágenes
+        // Y asegurar que el campo style.fullPageImage se preserve correctamente
         if (data.widgets) {
           data.widgets = data.widgets.map((widget: any) => {
             if (widget.content?.images) {
               widget.content.images = widget.content.images.map((img: string) => 
                 img.startsWith('http://') ? img.replace('http://', 'https://') : img
               )
+            }
+            // Asegurar que style.fullPageImage y style.backgroundImage se normalicen a HTTPS
+            if (widget.style) {
+              if (widget.style.fullPageImage && widget.style.fullPageImage.startsWith('http://')) {
+                widget.style.fullPageImage = widget.style.fullPageImage.replace('http://', 'https://')
+              }
+              if (widget.style.backgroundImage && widget.style.backgroundImage.startsWith('http://')) {
+                widget.style.backgroundImage = widget.style.backgroundImage.replace('http://', 'https://')
+              }
             }
             return widget
           })
