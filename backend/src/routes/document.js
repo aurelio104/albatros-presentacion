@@ -1259,21 +1259,24 @@ async function extractFromPptx(fileBuffer, req = null) {
       const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
 
       // Obtener la imagen completa renderizada de esta diapositiva (copia exacta del original)
-      // IMPORTANTE: Usar slideNumber - 1 porque las imágenes están indexadas desde 0
-      // pero slideNumber es 1-based (slide1 = índice 0, slide2 = índice 1, etc.)
-      const imageIndex = slideNumber - 1
+      // CRÍTICO: El array fullPageImages está ordenado por número de diapositiva
+      // Índice 0 = Diapositiva 1, Índice 1 = Diapositiva 2, etc.
+      // Usar la posición en el loop (i) en lugar de slideNumber para garantizar correspondencia
+      // porque las diapositivas XML ya están ordenadas y el array de imágenes también está ordenado
+      const imageIndex = i // Usar índice del loop, no slideNumber - 1
       const fullPageImage = (imageIndex >= 0 && imageIndex < fullPageImages.length) 
         ? fullPageImages[imageIndex] 
         : null
       
       if (!fullPageImage) {
         if (fullPageImages.length > 0) {
-          logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
+          logger.warn(`⚠️  No se encontró imagen renderizada para diapositiva ${slideNumber} en posición ${i + 1} (índice ${imageIndex}). Total de imágenes: ${fullPageImages.length}`)
+          logger.warn(`⚠️  slideNumber=${slideNumber}, posición en loop=${i + 1}, índice array=${imageIndex}`)
         } else {
           logger.debug(`ℹ️  No hay imágenes renderizadas disponibles (LibreOffice puede no estar disponible)`)
         }
       } else {
-        logger.debug(`✅ Imagen encontrada para diapositiva ${slideNumber} (índice ${imageIndex}): ${fullPageImage.substring(fullPageImage.lastIndexOf('/') + 1)}`)
+        logger.debug(`✅ Imagen encontrada para diapositiva ${slideNumber} (posición ${i + 1}, índice ${imageIndex}): ${fullPageImage.substring(fullPageImage.lastIndexOf('/') + 1)}`)
       }
 
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
