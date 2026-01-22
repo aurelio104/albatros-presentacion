@@ -630,23 +630,20 @@ function extractStructuredSections(fullText, images = []) {
           
           // Insertar imagen si se encontró una y no está ya usada
           if (imageToInsert && !usedImages.has(imageToInsert)) {
-            // Encontrar la posición exacta de la referencia en la línea original
-            const refPosition = originalLine.toLowerCase().indexOf(ref.keyword.toLowerCase(), ref.position)
+            // Buscar la referencia en la línea modificada (puede haber cambiado por referencias anteriores)
+            const lineLower = modifiedLine.toLowerCase()
+            const refPosition = lineLower.indexOf(ref.keyword.toLowerCase())
             
             if (refPosition !== -1) {
               // Insertar imagen justo después de la referencia en la línea
-              const beforeRef = originalLine.substring(0, refPosition + ref.keyword.length)
-              const afterRef = originalLine.substring(refPosition + ref.keyword.length)
+              const beforeRef = modifiedLine.substring(0, refPosition + ref.keyword.length)
+              const afterRef = modifiedLine.substring(refPosition + ref.keyword.length)
               
               // Insertar imagen después de la referencia, con espacios apropiados
               modifiedLine = beforeRef + '\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n' + afterRef
-              
-              // Actualizar originalLine para la siguiente referencia en la misma línea
-              originalLine = modifiedLine
             } else {
               // Si no se encuentra la referencia exacta, insertar al final de la línea
-              modifiedLine = originalLine + '\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n'
-              originalLine = modifiedLine
+              modifiedLine = modifiedLine + '\n\n<img src="' + imageToInsert + '" alt="Imagen" style="max-width: 100%; height: auto; margin: 1rem 0; border-radius: 8px; display: block;" />\n\n'
             }
             
             currentSection.images.push(imageToInsert)
