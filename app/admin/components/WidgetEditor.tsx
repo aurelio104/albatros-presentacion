@@ -408,6 +408,152 @@ export default function WidgetEditor({ widget, onUpdate }: WidgetEditorProps) {
           </div>
         </div>
 
+        {/* Archivos Adjuntos */}
+        <div>
+          <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
+            📎 Archivos Adjuntos (PDF, Excel, Word, Imágenes)
+          </h3>
+          <p style={{ 
+            fontSize: '0.85rem', 
+            color: 'rgba(255, 255, 255, 0.7)', 
+            marginBottom: '1rem',
+            padding: '0.5rem',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '6px',
+          }}>
+            💡 Adjunta archivos PDF, Excel, Word o imágenes. Se mostrará una vista previa como imagen en el widget. Al abrir el widget, se verá la información y la vista previa del archivo.
+          </p>
+          
+          {/* Input para subir archivos */}
+          <input
+            type="file"
+            accept=".docx,.xlsx,.pdf,.jpg,.jpeg,.png,.webp,.gif"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                handleAttachmentUpload(file)
+                e.target.value = '' // Reset input
+              }
+            }}
+            disabled={uploadingAttachment}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '2px dashed rgba(255, 255, 255, 0.3)',
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: '#ffffff',
+              borderRadius: '8px',
+              cursor: uploadingAttachment ? 'not-allowed' : 'pointer',
+              marginBottom: '1rem',
+            }}
+          />
+          {uploadingAttachment && (
+            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+              ⏳ Subiendo archivo...
+            </p>
+          )}
+
+          {/* Lista de adjuntos */}
+          {(editedWidget.content.attachments || []).length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '1rem',
+              marginTop: '1rem',
+            }}>
+              {editedWidget.content.attachments?.map((attachment, index) => (
+                <div
+                  key={attachment.id}
+                  style={{
+                    position: 'relative',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }}
+                >
+                  {/* Vista previa */}
+                  {attachment.previewUrl && (
+                    <img
+                      src={ensureHttps(attachment.previewUrl)}
+                      alt={attachment.filename}
+                      style={{
+                        width: '100%',
+                        height: '120px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        marginBottom: '0.5rem',
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                      }}
+                    />
+                  )}
+                  
+                  {/* Información del archivo */}
+                  <div style={{
+                    fontSize: '0.85rem',
+                    color: '#ffffff',
+                    wordBreak: 'break-word',
+                  }}>
+                    <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                      {attachment.filename}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                      {attachment.type.toUpperCase()}
+                      {attachment.size && ` • ${(attachment.size / 1024).toFixed(1)} KB`}
+                    </div>
+                  </div>
+
+                  {/* Botón eliminar */}
+                  <button
+                    onClick={() => removeAttachment(index)}
+                    style={{
+                      position: 'absolute',
+                      top: '0.5rem',
+                      right: '0.5rem',
+                      background: 'rgba(239, 68, 68, 0.8)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      width: '28px',
+                      height: '28px',
+                      cursor: 'pointer',
+                      fontSize: '1.2rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title="Eliminar adjunto"
+                  >
+                    ×
+                  </button>
+
+                  {/* Botón descargar */}
+                  <a
+                    href={ensureHttps(attachment.url)}
+                    download={attachment.filename}
+                    style={{
+                      display: 'block',
+                      marginTop: '0.5rem',
+                      padding: '0.5rem',
+                      background: 'rgba(59, 130, 246, 0.8)',
+                      color: 'white',
+                      textAlign: 'center',
+                      borderRadius: '6px',
+                      textDecoration: 'none',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    📥 Descargar
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Animación */}
         <div>
           <h3 style={{ ...headingStyle, marginBottom: '1rem', fontSize: '1.1rem' }}>
