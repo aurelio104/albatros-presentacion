@@ -274,7 +274,7 @@ export default function Home() {
             justifyContent: 'center',
             alignItems: 'center',
             padding: '2rem',
-            paddingTop: 'clamp(90px, 15vh, 110px)',
+            paddingTop: 'clamp(75px, 12vh, 95px)',
             minHeight: 'calc(100vh - clamp(90px, 15vh, 110px))',
           }}>
             <div
