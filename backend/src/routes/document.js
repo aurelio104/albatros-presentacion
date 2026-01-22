@@ -1111,10 +1111,13 @@ router.post('/', upload.single('file'), async (req, res) => {
         sectionImages.push(allImages[imageIndex])
       }
 
+      // Asegurar que description no esté vacío - usar content si description está vacío
+      const finalDescription = description || section.content || preview || ''
+      
       return {
         title: section.title || `Sección ${index + 1}`,
-        preview, // Preview preservado
-        description, // Descripción completa preservada (espacios, saltos de línea, puntuación)
+        preview: preview || (finalDescription.length > 150 ? finalDescription.substring(0, 150) + '...' : finalDescription), // Preview preservado
+        description: finalDescription, // Descripción completa preservada (espacios, saltos de línea, puntuación)
         additionalInfo, // Sin información adicional (todo en description)
         category: section.category,
         images: sectionImages, // Imágenes específicas de esta sección, correctamente asociadas
