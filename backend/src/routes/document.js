@@ -1047,6 +1047,10 @@ async function extractFromPptx(fileBuffer, req = null) {
     for (let i = 0; i < slideXmlEntries.length; i++) {
       const entry = slideXmlEntries[i]
       const xmlContent = entry.getData().toString('utf8')
+      
+      // Extraer número de diapositiva del nombre del archivo (ej: "ppt/slides/slide1.xml" -> 1)
+      const slideNumberMatch = entry.entryName.match(/slide(\d+)\.xml/)
+      const slideNumber = slideNumberMatch ? parseInt(slideNumberMatch[1]) : i + 1
 
       const result = await parseStringPromise(xmlContent)
 
