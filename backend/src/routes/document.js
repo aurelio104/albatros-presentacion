@@ -1620,7 +1620,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         logger.debug(`📋 Widget orden: ${widgetOrder} para "${section.title}" (${section.slideNumber ? 'slide' : section.pageNumber ? 'page' : section.sectionNumber ? 'section' : 'sheet'}: ${section.slideNumber || section.pageNumber || section.sectionNumber || section.sheetNumber})`)
       }
 
-      return {
+      const widget = {
         title: section.title || `Sección ${index + 1}`,
         preview: preview || (finalDescription.length > 150 ? finalDescription.substring(0, 150) + '...' : finalDescription), // Preview preservado
         description: finalDescription, // Descripción completa preservada (espacios, saltos de línea, puntuación)
@@ -1632,11 +1632,32 @@ router.post('/', upload.single('file'), async (req, res) => {
         level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
         displayMode: 'resumen' // Por defecto mostrar resumen, el admin puede cambiarlo a 'completo'
       }
+      
+      // Log detallado para PowerPoint
+      if (section.slideNumber) {
+        logger.debug(`📊 Widget creado: order=${widget.order}, slideNumber=${section.slideNumber}, title="${widget.title.substring(0, 50)}...", fullPageImage=${widget.style.fullPageImage ? 'SÍ' : 'NO'}`)
+      }
+      
+      return widget
     })
 
+    // CRÍTICO: Ordenar widgets por su campo 'order' antes de enviarlos
+    // Esto garantiza que el frontend reciba los widgets en el orden correcto
+    const sortedWidgets = [...widgets].sort((a, b) => {
+      const orderA = a.order ?? 0
+      const orderB = b.order ?? 0
+      return orderA - orderB
+    })
+    
+    // Log para verificar ordenamiento
+    logger.debug(`📋 Widgets ordenados (${sortedWidgets.length}):`)
+    sortedWidgets.forEach((w, i) => {
+      logger.debug(`   [${i}] order=${w.order}, title="${w.title.substring(0, 40)}..."`)
+    })
+    
     res.json({
       success: true,
-      widgets,
+      widgets: sortedWidgets, // Enviar widgets ordenados
       totalSections: sections.length,
       totalImages: allImages.length,
       fileName: req.file.originalname,

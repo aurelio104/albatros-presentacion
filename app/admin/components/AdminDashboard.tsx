@@ -203,9 +203,26 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const handleWidgetsGenerated = (newWidgets: WidgetData[]) => {
     if (!content) return
+    
+    // CRÍTICO: Ordenar los nuevos widgets por su campo 'order' antes de agregarlos
+    // Esto garantiza que los widgets de PowerPoint se mantengan en el orden correcto
+    const sortedNewWidgets = [...newWidgets].sort((a, b) => {
+      const orderA = a.order ?? a.id ?? 0
+      const orderB = b.order ?? b.id ?? 0
+      return orderA - orderB
+    })
+    
+    // Log para debugging
+    console.log('📋 Widgets generados (ordenados):', sortedNewWidgets.map((w, i) => ({
+      index: i,
+      order: w.order,
+      title: w.title,
+      slideNumber: w.style?.fullPageImage ? 'con imagen' : 'sin imagen'
+    })))
+    
     setContent({
       ...content,
-      widgets: [...content.widgets, ...newWidgets],
+      widgets: [...content.widgets, ...sortedNewWidgets],
     })
     setMessage({ type: 'success', text: `${newWidgets.length} widgets creados exitosamente` })
     setTimeout(() => setMessage(null), 3000)
