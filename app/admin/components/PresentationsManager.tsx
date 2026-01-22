@@ -38,7 +38,25 @@ export default function PresentationsManager({ currentContent, onLoadPresentatio
       
       if (response.ok) {
         const data = await response.json()
-        setPresentations(data.presentations || [])
+        // Validar y parsear fechas de forma segura
+        const validatedPresentations = (data.presentations || []).map((p: any) => {
+          let parsedDate = null
+          if (p.timestamp) {
+            try {
+              const date = new Date(p.timestamp)
+              if (!isNaN(date.getTime())) {
+                parsedDate = date
+              }
+            } catch (error) {
+              console.warn('Fecha inválida en presentación:', p.name, p.timestamp)
+            }
+          }
+          return {
+            ...p,
+            date: parsedDate
+          }
+        })
+        setPresentations(validatedPresentations)
       } else {
         setMessage({ type: 'error', text: 'Error al cargar presentaciones' })
       }
@@ -84,7 +102,9 @@ export default function PresentationsManager({ currentContent, onLoadPresentatio
         await loadPresentations()
         setTimeout(() => setMessage(null), 3000)
       } else {
-        setMessage({ type: 'error', text: data.error || 'Error al guardar presentación' })
+        const errorMsg = data.error || data.details || 'Error al guardar presentación'
+        console.error('Error guardando presentación:', data)
+        setMessage({ type: 'error', text: errorMsg })
         setTimeout(() => setMessage(null), 5000)
       }
     } catch (error: any) {
@@ -160,13 +180,22 @@ export default function PresentationsManager({ currentContent, onLoadPresentatio
 
   const formatDate = (date: Date | null) => {
     if (!date) return 'Fecha desconocida'
-    return new Intl.DateTimeFormat('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date)
+    try {
+      // Verificar que la fecha sea válida
+      if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return 'Fecha inválida'
+      }
+      return new Intl.DateTimeFormat('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date)
+    } catch (error) {
+      console.error('Error formateando fecha:', error)
+      return 'Fecha inválida'
+    }
   }
 
   return (
@@ -356,9 +385,20 @@ export default function PresentationsManager({ currentContent, onLoadPresentatio
                 <h3 style={{ margin: 0, marginBottom: '0.5rem', color: '#ffffff', fontSize: '1.1rem' }}>
                   {presentation.name}
                 </h3>
-                <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem', flexWrap: 'wrap' }}>
                   <span>📅 {formatDate(presentation.date)}</span>
                   <span>📊 {presentation.widgetCount} widgets</span>
+                  {presentation.timestamp && (
+                    <span style={{ fontSize: '0.85rem', opacity: 0.6 }}>
+                      {new Date(presentation.timestamp).toLocaleString('es-ES', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>

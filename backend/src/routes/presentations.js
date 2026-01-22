@@ -35,12 +35,25 @@ router.get('/', async (req, res) => {
           const content = await fs.readFile(filePath, 'utf-8')
           const data = JSON.parse(content)
           
+          // Validar y parsear fecha de forma segura
+          let parsedDate = null
+          if (data.timestamp) {
+            try {
+              const date = new Date(data.timestamp)
+              if (!isNaN(date.getTime())) {
+                parsedDate = date
+              }
+            } catch (dateError) {
+              logger.warn(`Fecha inválida en ${file}:`, data.timestamp)
+            }
+          }
+          
           presentations.push({
             id: file.replace('.json', ''),
             name: data.name || file.replace('.json', ''),
             filename: file,
             timestamp: data.timestamp || null,
-            date: data.timestamp ? new Date(data.timestamp) : null,
+            date: parsedDate,
             widgetCount: data.content?.widgets?.length || 0
           })
         } catch (error) {
