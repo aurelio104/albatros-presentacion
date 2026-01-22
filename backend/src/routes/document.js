@@ -1008,19 +1008,57 @@ async function extractImagesFromPptx(fileBuffer, req = null) {
   try {
     const zip = new AdmZip(fileBuffer)
     const zipEntries = zip.getEntries()
+    const timestamp = Date.now() // Usar un solo timestamp para todas las imágenes del mismo archivo
+    let imageIndex = 0
 
     for (const entry of zipEntries) {
       if (entry.entryName.startsWith('ppt/media/') && !entry.isDirectory) {
-        const buffer = entry.getData()
-        const ext = path.extname(entry.entryName).toLowerCase()
-        const imageName = `pptx-${Date.now()}-${path.basename(entry.entryName)}`
-        const imagePath = path.join(imagesDir, imageName)
-        await fs.writeFile(imagePath, buffer)
-        const backendUrl = getBackendUrl(req)
-        images.push(`${backendUrl}/images/${imageName}`)
-        logger.debug(`✅ Imagen PPTX extraída: ${imageName}`)
+        try {
+          const buffer = entry.getData()
+          const originalName = path.basename(entry.entryName)
+          const ext = path.extname(originalName).toLowerCase() || '.jpg' // Fallback a .jpg si no hay extensión
+          
+          // Normalizar extensión
+          const normalizedExt = ext === '.jpeg' ? '.jpg' : ext
+          
+          // Crear nombre único pero predecible
+          imageIndex++
+          const imageName = `pptx-${timestamp}-image${imageIndex}${normalizedExt}`
+          const imagePath = path.join(imagesDir, imageName)
+          
+          // Verificar que el buffer tenga datos
+          if (!buffer || buffer.length === 0) {
+            logger.warn(`⚠️  Imagen vacía en ${entry.entryName}, saltando...`)
+            continue
+          }
+          
+          // Guardar la imagen
+          await fs.writeFile(imagePath, buffer)
+          
+          // Verificar que el archivo se guardó correctamente
+          try {
+            const stats = await fs.stat(imagePath)
+            if (stats.size === 0) {
+              logger.warn(`⚠️  Imagen guardada pero está vacía: ${imageName}`)
+              continue
+            }
+          } catch (statError) {
+            logger.error(`❌ Error verificando imagen guardada ${imageName}:`, statError.message)
+            continue
+          }
+          
+          const backendUrl = getBackendUrl(req)
+          const imageUrl = `${backendUrl}/images/${imageName}`
+          images.push(imageUrl)
+          logger.debug(`✅ Imagen PPTX extraída y guardada: ${imageName} (${(buffer.length / 1024).toFixed(2)} KB) desde ${entry.entryName}`)
+        } catch (imgError) {
+          logger.warn(`⚠️  Error procesando imagen ${entry.entryName}:`, imgError.message)
+          // Continuar con la siguiente imagen
+        }
       }
     }
+    
+    logger.debug(`📊 Total de imágenes PPTX extraídas: ${images.length}`)
   } catch (error) {
     logger.error('❌ Error extrayendo imágenes de PPTX:', error.message)
   }
@@ -1626,7 +1664,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         description: finalDescription, // Descripción completa preservada (espacios, saltos de línea, puntuación)
         additionalInfo, // Sin información adicional (todo en description)
         category: section.category,
-        images: sectionImages, // Imágenes específicas de esta sección, correctamente asociadas
+        images: sectionImages.filter(img => img !== null && img !== undefined), // Imágenes específicas de esta sección, filtrar nulls
         style: widgetStyle, // Estilo con fondo si existe
         order: widgetOrder, // Orden basado en número de diapositiva para PowerPoint, índice para otros
         level: section.level || 1, // Nivel jerárquico (1=título, 2=subtítulo, 3=sub-subtítulo)
