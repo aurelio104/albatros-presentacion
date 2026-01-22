@@ -1150,6 +1150,9 @@ async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
 async function extractFromPptx(fileBuffer, req = null) {
   const sections = []
   const allImages = await extractImagesFromPptx(fileBuffer, req) // Extraer imágenes primero
+  
+  // Renderizar todas las diapositivas como imágenes completas (copia exacta del original)
+  const fullPageImages = await renderAllSlidesAsImages(fileBuffer, req)
 
   try {
     const zip = new AdmZip(fileBuffer)
@@ -1196,8 +1199,8 @@ async function extractFromPptx(fileBuffer, req = null) {
       // Extraer fondo de la diapositiva
       const backgroundImage = await extractSlideBackground(zip, slideNumber - 1, result, req)
 
-      // Renderizar diapositiva completa como imagen (copia exacta del original)
-      const fullPageImage = await renderSlideAsImage(fileBuffer, i, req)
+      // Obtener la imagen completa renderizada de esta diapositiva (copia exacta del original)
+      const fullPageImage = fullPageImages[i] || null
 
       // Asociar imágenes a la diapositiva (distribución equitativa si no hay referencias explícitas)
       const slideImages = []
