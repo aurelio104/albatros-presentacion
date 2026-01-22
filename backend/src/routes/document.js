@@ -1078,8 +1078,9 @@ async function extractSlideBackground(zip, slideIndex, slideXml, req = null) {
   return null
 }
 
-// Renderizar diapositiva completa de PowerPoint como imagen usando LibreOffice
-async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
+// Renderizar todas las diapositivas de PowerPoint como imágenes usando LibreOffice
+// Esta función se llama una vez para todo el archivo y genera todas las imágenes
+async function renderAllSlidesAsImages(fileBuffer, req = null) {
   const { exec } = await import('child_process')
   const { promisify } = await import('util')
   const execAsync = promisify(exec)
@@ -1089,6 +1090,8 @@ async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
   
   const imagesDir = path.join(__dirname, '..', '..', 'public', 'images')
   await fs.mkdir(imagesDir, { recursive: true })
+  
+  const slideImages = []
   
   try {
     // Crear archivo temporal
@@ -1100,37 +1103,34 @@ async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
     // Guardar el buffer del PPTX en archivo temporal
     await fs.writeFile(tempPptxPath, fileBuffer)
     
-    // Usar LibreOffice para convertir la diapositiva específica a imagen
-    // LibreOffice puede exportar diapositivas individuales usando filtros
-    // Comando: libreoffice --headless --convert-to png --outdir <output> <input> --slide <number>
-    const slideNumber = slideIndex + 1
-    const outputImagePath = path.join(tempOutputDir, `slide${slideNumber}.png`)
-    
     try {
-      // Intentar usar LibreOffice si está disponible
+      // LibreOffice convierte cada diapositiva a un archivo PNG separado
+      // Comando: libreoffice --headless --convert-to png --outdir <output> <input>
+      // Genera: presentation.1.png, presentation.2.png, etc.
       await execAsync(`libreoffice --headless --convert-to png --outdir "${tempOutputDir}" "${tempPptxPath}" 2>&1 || true`)
       
-      // Buscar la imagen generada (LibreOffice genera slide1.png, slide2.png, etc.)
-      const generatedImagePath = path.join(tempOutputDir, `slide${slideNumber}.png`)
+      // Buscar todas las imágenes generadas
+      const files = await fs.readdir(tempOutputDir)
+      const pngFiles = files.filter(f => f.endsWith('.png')).sort()
       
-      try {
-        await fs.access(generatedImagePath)
-        // La imagen existe, copiarla al directorio de imágenes
+      const backendUrl = getBackendUrl(req)
+      
+      for (let i = 0; i < pngFiles.length; i++) {
+        const pngFile = pngFiles[i]
+        const sourcePath = path.join(tempOutputDir, pngFile)
+        const slideNumber = i + 1
         const imageName = `pptx-full-${Date.now()}-slide${slideNumber}.png`
         const finalImagePath = path.join(imagesDir, imageName)
-        await fs.copyFile(generatedImagePath, finalImagePath)
         
-        const backendUrl = getBackendUrl(req)
-        logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
-        
-        // Limpiar archivos temporales
-        await fs.rm(tempDir, { recursive: true, force: true })
-        
-        return `${backendUrl}/images/${imageName}`
-      } catch (accessError) {
-        // La imagen no se generó, continuar sin ella
-        logger.debug(`⚠️  No se pudo generar imagen para diapositiva ${slideNumber}, usando fondo como alternativa`)
+        try {
+          await fs.copyFile(sourcePath, finalImagePath)
+          slideImages.push(`${backendUrl}/images/${imageName}`)
+          logger.debug(`✅ Diapositiva ${slideNumber} renderizada como imagen: ${imageName}`)
+        } catch (copyError) {
+          logger.debug(`⚠️  Error copiando imagen de diapositiva ${slideNumber}:`, copyError.message)
+        }
       }
+      
     } catch (libreOfficeError) {
       // LibreOffice no está disponible o falló, continuar sin renderizado completo
       logger.debug(`⚠️  LibreOffice no disponible para renderizado: ${libreOfficeError.message}`)
@@ -1140,10 +1140,10 @@ async function renderSlideAsImage(fileBuffer, slideIndex, req = null) {
     await fs.rm(tempDir, { recursive: true, force: true })
     
   } catch (error) {
-    logger.error(`Error renderizando diapositiva ${slideIndex + 1}:`, error.message)
+    logger.error('Error renderizando diapositivas:', error.message)
   }
   
-  return null
+  return slideImages
 }
 
 // Extraer contenido de PowerPoint
