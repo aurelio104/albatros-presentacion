@@ -131,8 +131,18 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       }
     } catch (error: any) {
       console.error('Error al guardar el contenido:', error)
-      setMessage({ type: 'error', text: `Error de conexión: ${error?.message || 'Error desconocido'}` })
-      setTimeout(() => setMessage(null), 5000)
+      const msg = error?.message || ''
+      const isNetworkError = typeof msg === 'string' && (
+        msg.includes('Failed to fetch') ||
+        msg.includes('NetworkError') ||
+        msg.includes('Load failed') ||
+        msg.includes('Network request failed')
+      )
+      const errorText = isNetworkError
+        ? 'No se pudo conectar con el servidor. En local, asegúrate de tener el backend en marcha (puerto 3001). En producción, el backend en Koyeb puede estar caído.'
+        : `Error al guardar: ${msg || 'Error desconocido'}`
+      setMessage({ type: 'error', text: errorText })
+      setTimeout(() => setMessage(null), 8000)
     } finally {
       setSaving(false)
     }

@@ -39,10 +39,7 @@ export default function RootLayout({
         <link rel="preconnect" href={process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'} crossOrigin="anonymous" />
         {/* DNS Prefetch para recursos externos */}
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'} />
-        {/* Preload de recursos críticos */}
-        <link rel="preload" href="/images/logoB.png" as="image" type="image/png" />
-        <link rel="preload" href="/images/logotB.png" as="image" type="image/png" />
-        {/* Favicons */}
+        {/* Favicons (sin preload: el logo no se usa de inmediato y genera warning) */}
         <link rel="icon" href="/images/logoB.png" type="image/png" />
         <link rel="apple-touch-icon" href="/images/logoB.png" />
         <link rel="shortcut icon" href="/images/logoB.png" />
