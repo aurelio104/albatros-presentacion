@@ -12,6 +12,10 @@ RUN npm ci && npm cache clean --force
 # Copiar código fuente del backend
 COPY backend/src ./src
 
+# Presentaciones y adjuntos versionados para sembrar en el volumen
+COPY data/presentations ./seed/presentations
+COPY public/files ./seed/files
+
 # Stage de producción
 FROM node:18-alpine AS production
 
@@ -28,6 +32,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/seed ./seed
 
 # Asegurar que los directorios existen y tienen permisos correctos
 RUN mkdir -p data public/images public/files data/presentations data/backups && \

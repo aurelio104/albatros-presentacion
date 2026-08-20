@@ -60,9 +60,91 @@ export async function ensureStorageDir(dirPath) {
   }
 }
 
+async function firstExistingDir(candidates) {
+  const fs = await import('fs/promises')
+  for (const dir of candidates) {
+    try {
+      const stat = await fs.stat(dir)
+      if (stat.isDirectory()) return dir
+    } catch {
+      // siguiente candidato
+    }
+  }
+  return null
+}
+
+async function copySeedFiles(seedDir, destDir) {
+  const fs = await import('fs/promises')
+  const logger = (await import('./logger.js')).default
+  if (!seedDir) return 0
+
+  await ensureStorageDir(destDir)
+  const files = await fs.readdir(seedDir)
+  let copied = 0
+
+  for (const file of files) {
+    if (file.startsWith('.') || file.startsWith('._')) continue
+    const src = path.join(seedDir, file)
+    const dest = path.join(destDir, file)
+    const stat = await fs.stat(src)
+    if (!stat.isFile()) continue
+    await fs.copyFile(src, dest)
+    copied += 1
+    logger.info(`📦 Semilla copiada: ${file}`)
+  }
+
+  return copied
+}
+
+async function seedBundledContent() {
+  const fs = await import('fs/promises')
+  const logger = (await import('./logger.js')).default
+
+  const presentationSeedDir = await firstExistingDir([
+    path.join(process.cwd(), 'seed', 'presentations'),
+    path.join(__dirname, '..', '..', 'seed', 'presentations'),
+    path.join(__dirname, '..', '..', '..', 'data', 'presentations'),
+  ])
+
+  const filesSeedDir = await firstExistingDir([
+    path.join(process.cwd(), 'seed', 'files'),
+    path.join(__dirname, '..', '..', 'seed', 'files'),
+    path.join(__dirname, '..', '..', '..', 'public', 'files'),
+    path.join(__dirname, '..', '..', 'public', 'files'),
+  ])
+
+  const presentationsCopied = await copySeedFiles(presentationSeedDir, STORAGE_PATHS.presentations())
+  const filesCopied = await copySeedFiles(filesSeedDir, STORAGE_PATHS.files())
+
+  const agendaPath = path.join(STORAGE_PATHS.presentations(), 'agenda-20-agosto-2026.json')
+  try {
+    const raw = await fs.readFile(agendaPath, 'utf-8')
+    const agenda = JSON.parse(raw)
+    const activeInfo = {
+      id: agenda.id || 'agenda-20-agosto-2026',
+      name: agenda.name || 'Agenda 20 de agosto 2026 — Reunión de Accionistas',
+      timestamp: new Date().toISOString(),
+    }
+    await fs.writeFile(
+      path.join(STORAGE_PATHS.data(), 'active-presentation.json'),
+      JSON.stringify(activeInfo, null, 2),
+      'utf-8'
+    )
+    if (agenda.content) {
+      await fs.writeFile(STORAGE_PATHS.content(), JSON.stringify(agenda.content, null, 2), 'utf-8')
+    }
+    logger.info(`✅ Presentación activa: ${activeInfo.name}`)
+  } catch (error) {
+    logger.warn('No se pudo activar la presentación sembrada:', error.message)
+  }
+
+  if (presentationsCopied || filesCopied) {
+    logger.info(`📦 Semillas aplicadas: ${presentationsCopied} presentaciones, ${filesCopied} archivos`)
+  }
+}
+
 // Función helper para inicializar todo el almacenamiento
 export async function initializeStorage() {
-  const fs = await import('fs/promises')
   const logger = (await import('./logger.js')).default
   
   try {
@@ -72,6 +154,8 @@ export async function initializeStorage() {
     await ensureStorageDir(STORAGE_PATHS.backups())
     await ensureStorageDir(STORAGE_PATHS.images())
     await ensureStorageDir(STORAGE_PATHS.files())
+
+    await seedBundledContent()
     
     logger.info(`✅ Almacenamiento inicializado en: ${getStorageBase()}`)
     logger.info(`   Modo: ${IS_KOYEB ? 'Koyeb (Volumen persistente)' : 'Local/Desarrollo'}`)
