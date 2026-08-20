@@ -1,22 +1,22 @@
 {
   "id": "agenda-20-agosto-2026",
   "name": "Agenda 20 de agosto 2026 — Reunión de Accionistas",
-  "timestamp": "2026-08-20T14:00:01.000Z",
-  "version": "1.0",
+  "timestamp": "2026-08-20T14:23:40.000Z",
+  "version": "1.3",
   "content": {
     "widgets": [
       {
         "id": 1,
         "title": "Reunión de Accionistas",
-        "preview": "Alianza Glancelot C.A. — Agenda 20 de agosto 2026",
+        "preview": "Agenda 20 de agosto 2026 — Alianza Glancelot C.A.",
         "category": "estrategico",
         "displayMode": "resumen",
         "order": 1,
         "content": {
           "title": "Reunión de Accionistas",
-          "description": "Reunión de accionistas de la sociedad mercantil ALIANZA GLANCELOT C.A. (RIF J-29536680-9), convocada en la sede de la compañía en Maracay, estado Aragua.",
+          "description": "Reunión de accionistas de ALIANZA GLANCELOT C.A. (RIF J-29536680-9), en la sede de Maracay, estado Aragua. Incluye los ocho puntos de la minuta oficial.",
           "images": [],
-          "additionalInfo": "Fecha: 20 de agosto de 2026.\nLugar: Sede de Alianza Glancelot C.A., Maracay, estado Aragua.\nSociedad: Alianza Glancelot C.A. — J-29536680-9.\n\nEsta presentación sigue la minuta oficial. El documento Word original queda anexado para consulta y firma.",
+          "additionalInfo": "Fecha: 20 de agosto de 2026\nLugar: Sede de Alianza Glancelot C.A., Maracay, estado Aragua\nSociedad: Alianza Glancelot C.A. — J-29536680-9\n\nORDEN DEL DÍA\n\n1. Certificación RAV-119\n• Estado actual del Proceso de Certificación 2026 de Albatros Airlines (gestión INAC).\n• Continuidad del AOC GAL-035.\n• Estado y condición de aeronaves: EMBRAER 120, SHORT S-D360, MCDONNELL DOUGLAS MD-83.\n\n2. ACMI — Flota adicional\n• BOEING 737-8\n• AIRBUS A-320\n• Disponibilidad, condición técnica, vigencia contractual y continuidad operativa.\n\n3. Caso 111 Repair\n• Curazao — Soliana Bufete.\n• Propuesta de pago para continuidad del juicio.\n\n4. OMAC-569\n• Estatus del expediente, avances y siguientes pasos.\n\n5. Cursos de personal según RAV-119\n• Cursos vencidos, vigentes y programados.\n• Personal que requiere recertificación.\n• Impacto en la operación y en la certificación 2026.\n\n6. Mantenimiento\n• EMBRAER 120 y MCDONNELL DOUGLAS MD-83: estado y tiempo de culminación.\n• El detalle técnico se presenta en el widget Mantenimiento.\n\n7. Financiamiento Londres\n• Condición actual, vigencia, calendario y decisiones de los accionistas.\n\n8. Condición Jurídica\n• Situación jurídica de la sociedad y asuntos legales abiertos.\n\nCierre: no habiendo más nada que tratar, se da por terminada la reunión. Previa lectura, la minuta se firma por todos los concurrentes en señal de aprobación.",
           "attachments": [
             {
               "id": "agenda-20-agosto-2026.docx",
@@ -24,7 +24,7 @@
               "filename": "2 AGENDA 20 AGOSTO.docx",
               "type": "word",
               "size": 15760,
-              "uploadedAt": "2026-08-20T14:00:01.000Z"
+              "uploadedAt": "2026-08-20T14:17:20.000Z"
             }
           ]
         },
@@ -40,182 +40,36 @@
       },
       {
         "id": 2,
-        "title": "1. Certificación RAV-119",
-        "preview": "Estado actual del Proceso de Certificación 2026 y continuidad del AOC",
-        "category": "calidad",
+        "title": "Mantenimiento",
+        "preview": "MTTO ALBATROS 20AGO26 — 3 páginas a pantalla completa",
+        "category": "operaciones",
         "displayMode": "resumen",
         "order": 2,
         "content": {
-          "title": "1. Certificación RAV-119",
-          "description": "Comunicación del estado actual RAV-119 del Proceso de Certificación 2026 de Albatros Airlines, gestión INAC, y continuidad del AOC GAL-035.",
-          "images": [],
-          "additionalInfo": "Temas a tratar:\n\n• Estado actual RAV-119 — Proceso de Certificación 2026 de Albatros Airlines (gestión INAC).\n• Continuidad del AOC GAL-035.\n\nEstado y condición de aeronaves:\n• EMBRAER 120\n• SHORT S-D360\n• MCDONNELL DOUGLAS MD-83"
+          "title": "Mantenimiento",
+          "description": "Informe de mantenimiento de flota. Al seleccionar se abre a pantalla completa con las 3 páginas del PDF original.",
+          "images": [
+            "/images/mtto-albatros-20ago26-p1.png",
+            "/images/mtto-albatros-20ago26-p2.png",
+            "/images/mtto-albatros-20ago26-p3.png"
+          ],
+          "additionalInfo": "",
+          "attachments": [
+            {
+              "id": "mtto-albatros-20ago26.pdf",
+              "url": "/files/mtto-albatros-20ago26.pdf",
+              "filename": "MTTO ALBATROS 20AGO26.pdf",
+              "type": "pdf",
+              "size": 453842,
+              "uploadedAt": "2026-08-20T14:23:40.000Z"
+            }
+          ],
+          "embedPdf": true
         },
         "animation": {
           "type": "slideUp",
           "duration": 0.5,
-          "delay": 0.08
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 3,
-        "title": "2. ACMI — Flota adicional",
-        "preview": "Estado y condición de las aeronaves bajo esquema ACMI",
-        "category": "operaciones",
-        "displayMode": "resumen",
-        "order": 3,
-        "content": {
-          "title": "2. ACMI — Flota adicional",
-          "description": "Revisión del estado y la condición de las aeronaves operadas bajo esquema ACMI.",
-          "images": [],
-          "additionalInfo": "Aeronaves ACMI a revisar:\n\n• BOEING 737-8\n• AIRBUS A-320\n\nPuntos de discusión: disponibilidad, condición técnica, vigencia contractual y continuidad operativa."
-        },
-        "animation": {
-          "type": "scale",
-          "duration": 0.5,
-          "delay": 0.16
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 4,
-        "title": "3. Caso 111 Repair",
-        "preview": "Curazao — Soliana Bufete. Propuesta de pago para continuidad del juicio",
-        "category": "economico",
-        "displayMode": "resumen",
-        "order": 4,
-        "content": {
-          "title": "3. Caso 111 Repair",
-          "description": "Caso 111 Repair Curacao, atendido por Soliana Bufete. Se presenta la propuesta de pago necesaria para la continuidad del juicio.",
-          "images": [],
-          "additionalInfo": "Expediente: Caso 111 Repair Curacao.\nRepresentación: Soliana Bufete.\nMateria: propuesta de pago para continuidad de juicio.\n\nDecisión requerida: revisar, aprobar o ajustar la propuesta de pago presentada."
-        },
-        "animation": {
-          "type": "fadeIn",
-          "duration": 0.5,
-          "delay": 0.24
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 5,
-        "title": "4. OMAC-569",
-        "preview": "Seguimiento y estado del expediente OMAC-569",
-        "category": "calidad",
-        "displayMode": "resumen",
-        "order": 5,
-        "content": {
-          "title": "4. OMAC-569",
-          "description": "Revisión del estado actual, avances y pendientes del expediente OMAC-569.",
-          "images": [],
-          "additionalInfo": "Punto de agenda: OMAC-569.\n\nSe presenta el estatus del expediente para conocimiento de los accionistas y definición de los siguientes pasos."
-        },
-        "animation": {
-          "type": "slideUp",
-          "duration": 0.5,
-          "delay": 0.32
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 6,
-        "title": "5. Cursos de personal",
-        "preview": "Formación y cumplimiento de personal según RAV-119",
-        "category": "recursos",
-        "displayMode": "resumen",
-        "order": 6,
-        "content": {
-          "title": "5. Cursos de personal",
-          "description": "Revisión de los cursos de personal exigidos según RAV-119, su cobertura y el plan de cumplimiento.",
-          "images": [],
-          "additionalInfo": "Marco: RAV-119.\n\nTemas a tratar:\n• Cursos vencidos, vigentes y programados.\n• Personal que requiere recertificación.\n• Impacto en la operación y en el proceso de certificación 2026."
-        },
-        "animation": {
-          "type": "scale",
-          "duration": 0.5,
-          "delay": 0.4
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 7,
-        "title": "6. Mantenimiento",
-        "preview": "Estado de mantenimiento y tiempo de culminación de flota propia",
-        "category": "operaciones",
-        "displayMode": "resumen",
-        "order": 7,
-        "content": {
-          "title": "6. Mantenimiento",
-          "description": "Estado de mantenimiento y tiempo estimado de culminación de los trabajos en las aeronaves de la flota.",
-          "images": [],
-          "additionalInfo": "Aeronaves en seguimiento:\n\n• EMBRAER 120 — estado de mantenimiento y tiempo de culminación.\n• MCDONNELL DOUGLAS MD-83 — estado de mantenimiento y tiempo de culminación.\n\nSe requiere fecha estimada de retorno a servicio y recursos pendientes."
-        },
-        "animation": {
-          "type": "fadeIn",
-          "duration": 0.5,
-          "delay": 0.48
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 8,
-        "title": "7. Financiamiento Londres",
-        "preview": "Condición actual del financiamiento en Londres",
-        "category": "economico",
-        "displayMode": "resumen",
-        "order": 8,
-        "content": {
-          "title": "7. Financiamiento Londres",
-          "description": "Informe sobre la condición actual del financiamiento de Londres: estatus, compromisos y siguientes pasos.",
-          "images": [],
-          "additionalInfo": "Punto de agenda: condición actual del Financiamiento Londres.\n\nTemas a tratar: vigencia, condiciones, calendario de pagos o desembolsos, y decisiones que requieran aprobación de los accionistas."
-        },
-        "animation": {
-          "type": "slideUp",
-          "duration": 0.5,
-          "delay": 0.56
-        },
-        "style": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderColor": "rgba(255, 255, 255, 0.2)"
-        }
-      },
-      {
-        "id": 9,
-        "title": "8. Condición Jurídica",
-        "preview": "Situación jurídica de la sociedad y asuntos legales abiertos",
-        "category": "estrategico",
-        "displayMode": "resumen",
-        "order": 9,
-        "content": {
-          "title": "8. Condición Jurídica",
-          "description": "Revisión de la condición jurídica de la sociedad y de los asuntos legales que requieren conocimiento o decisión de los accionistas.",
-          "images": [],
-          "additionalInfo": "Punto de agenda: Condición Jurídica.\n\nCierre de la minuta: no habiendo más nada que tratar, se da por terminada la reunión. Previa lectura, la minuta se firma por todos los concurrentes en señal de aprobación."
-        },
-        "animation": {
-          "type": "scale",
-          "duration": 0.5,
-          "delay": 0.64
+          "delay": 0.12
         },
         "style": {
           "backgroundColor": "rgba(255, 255, 255, 0.1)",

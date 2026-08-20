@@ -14,6 +14,7 @@ export interface WidgetContent {
   images: string[]
   additionalInfo?: string
   attachments?: FileAttachment[] // Archivos adjuntos (Word, Excel, PDF, imágenes)
+  embedPdf?: boolean // Mostrar el PDF adjunto tal cual, embebido a página completa
 }
 
 export interface WidgetAnimation {

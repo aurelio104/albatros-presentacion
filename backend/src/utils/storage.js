@@ -113,8 +113,16 @@ async function seedBundledContent() {
     path.join(__dirname, '..', '..', 'public', 'files'),
   ])
 
+  const imagesSeedDir = await firstExistingDir([
+    path.join(process.cwd(), 'seed', 'images'),
+    path.join(__dirname, '..', '..', 'seed', 'images'),
+  ])
+
   const presentationsCopied = await copySeedFiles(presentationSeedDir, STORAGE_PATHS.presentations())
   const filesCopied = await copySeedFiles(filesSeedDir, STORAGE_PATHS.files())
+  const imagesCopied = imagesSeedDir
+    ? await copySeedFiles(imagesSeedDir, STORAGE_PATHS.images())
+    : 0
 
   const agendaPath = path.join(STORAGE_PATHS.presentations(), 'agenda-20-agosto-2026.json')
   try {
@@ -138,8 +146,8 @@ async function seedBundledContent() {
     logger.warn('No se pudo activar la presentación sembrada:', error.message)
   }
 
-  if (presentationsCopied || filesCopied) {
-    logger.info(`📦 Semillas aplicadas: ${presentationsCopied} presentaciones, ${filesCopied} archivos`)
+  if (presentationsCopied || filesCopied || imagesCopied) {
+    logger.info(`📦 Semillas aplicadas: ${presentationsCopied} presentaciones, ${filesCopied} archivos, ${imagesCopied} imágenes`)
   }
 }
 

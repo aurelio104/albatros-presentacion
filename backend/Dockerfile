@@ -13,8 +13,12 @@ RUN npm ci && npm cache clean --force
 COPY backend/src ./src
 
 # Presentaciones y adjuntos versionados para sembrar en el volumen
+RUN mkdir -p seed/presentations seed/files seed/images
 COPY data/presentations ./seed/presentations
 COPY public/files ./seed/files
+COPY public/images/mtto-albatros-20ago26-p1.png ./seed/images/mtto-albatros-20ago26-p1.png
+COPY public/images/mtto-albatros-20ago26-p2.png ./seed/images/mtto-albatros-20ago26-p2.png
+COPY public/images/mtto-albatros-20ago26-p3.png ./seed/images/mtto-albatros-20ago26-p3.png
 
 # Stage de producción
 FROM node:18-alpine AS production

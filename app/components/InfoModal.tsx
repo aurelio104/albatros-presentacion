@@ -11,6 +11,9 @@ interface InfoModalProps {
 
 export default function InfoModal({ widget, onClose }: InfoModalProps) {
   const [isMobile, setIsMobile] = useState(false)
+  const [pdfPage, setPdfPage] = useState(0)
+  const pdfPages = widget.content.embedPdf ? (widget.content.images || []) : []
+  const pdfAttachment = (widget.content.attachments || []).find((a) => a.type === 'pdf')
 
   useEffect(() => {
     const checkMobile = () => {
@@ -23,23 +26,39 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
   }, [])
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeys = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
+        return
+      }
+      if (!widget.content.embedPdf || pdfPages.length === 0) return
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault()
+        setPdfPage((page) => Math.min(pdfPages.length - 1, page + 1))
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault()
+        setPdfPage((page) => Math.max(0, page - 1))
       }
     }
-    document.addEventListener('keydown', handleEscape)
+    document.addEventListener('keydown', handleKeys)
     document.body.style.overflow = 'hidden'
     
     return () => {
-      document.removeEventListener('keydown', handleEscape)
+      document.removeEventListener('keydown', handleKeys)
       document.body.style.overflow = 'unset'
     }
-  }, [onClose])
+  }, [onClose, widget.content.embedPdf, pdfPages.length])
 
   return (
     <>
       <style jsx>{`
+        .modal-overlay.pdf-mode {
+          padding: 0;
+          background-color: #000;
+          align-items: stretch;
+        }
+
         .modal-overlay {
           position: fixed;
           top: 0;
@@ -83,6 +102,87 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
         
         .modal-content.with-full-page {
           background-color: var(--modal-bg-overlay, rgba(0, 0, 0, 0.1)); /* Overlay muy transparente para preservar diseño exacto */
+        }
+
+        .modal-content.with-pdf {
+          max-width: 100vw;
+          width: 100vw;
+          height: 100vh;
+          max-height: 100vh;
+          padding: 0;
+          border-radius: 0;
+          border: none;
+          background: #000;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .pdf-fullscreen {
+          position: relative;
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #000;
+        }
+
+        .pdf-slide {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          background: #000;
+          user-select: none;
+        }
+
+        .pdf-nav {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 52px;
+          height: 52px;
+          border: none;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.55);
+          color: #fff;
+          font-size: 1.8rem;
+          cursor: pointer;
+          z-index: 12;
+        }
+
+        .pdf-nav:disabled {
+          opacity: 0.3;
+          cursor: default;
+        }
+
+        .pdf-nav.prev { left: 16px; }
+        .pdf-nav.next { right: 16px; }
+
+        .pdf-bar {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 0.75rem 1rem;
+          background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+          color: #fff;
+          z-index: 12;
+        }
+
+        .pdf-bar a, .pdf-bar button {
+          color: #fff;
+          background: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          border-radius: 8px;
+          padding: 0.4rem 0.75rem;
+          text-decoration: none;
+          font-size: 0.85rem;
+          cursor: pointer;
         }
 
         .modal-close {
@@ -316,9 +416,9 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
           }
         }
       `}</style>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className={`modal-overlay${widget.content.embedPdf ? ' pdf-mode' : ''}`} onClick={onClose}>
         <div 
-          className={`modal-content ${(widget.style?.fullPageImage || widget.style?.backgroundImage) ? 'with-background' : ''} ${widget.style?.fullPageImage ? 'with-full-page' : ''}`}
+          className={`modal-content ${(widget.style?.fullPageImage || widget.style?.backgroundImage) ? 'with-background' : ''} ${widget.style?.fullPageImage ? 'with-full-page' : ''} ${widget.content.embedPdf ? 'with-pdf' : ''}`}
           style={(widget.style?.fullPageImage || widget.style?.backgroundImage) ? {
             '--modal-bg-image': `url(${ensureHttps(widget.style.fullPageImage || widget.style.backgroundImage)})`,
             '--modal-bg-overlay': widget.style.fullPageImage ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.6)'
@@ -329,10 +429,61 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
             ×
           </button>
 
-          <h1 className="modal-title">{widget.title}</h1>
+          {!widget.content.embedPdf && (
+            <h1 className="modal-title">{widget.title}</h1>
+          )}
 
-          {/* Renderizar descripción con imágenes inline si están en HTML */}
-          {(() => {
+          {widget.content.embedPdf && (
+            <div className="pdf-fullscreen">
+              {pdfPages.length > 0 ? (
+                <img
+                  className="pdf-slide"
+                  src={ensureHttps(pdfPages[pdfPage])}
+                  alt={`${widget.title} — página ${pdfPage + 1} de ${pdfPages.length}`}
+                />
+              ) : pdfAttachment ? (
+                <iframe
+                  className="pdf-slide"
+                  src={`${ensureHttps(pdfAttachment.url)}#toolbar=1&navpanes=0&view=Fit`}
+                  title={pdfAttachment.filename}
+                />
+              ) : (
+                <p className="modal-description">No hay PDF de mantenimiento anexado.</p>
+              )}
+
+              {pdfPages.length > 1 && (
+                <>
+                  <button
+                    className="pdf-nav prev"
+                    onClick={() => setPdfPage((page) => Math.max(0, page - 1))}
+                    disabled={pdfPage === 0}
+                    aria-label="Página anterior"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    className="pdf-nav next"
+                    onClick={() => setPdfPage((page) => Math.min(pdfPages.length - 1, page + 1))}
+                    disabled={pdfPage === pdfPages.length - 1}
+                    aria-label="Página siguiente"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+
+              <div className="pdf-bar">
+                <span>{widget.title} · {pdfPage + 1} / {pdfPages.length || 3}</span>
+                {pdfAttachment && (
+                  <a href={ensureHttps(pdfAttachment.url)} target="_blank" rel="noopener noreferrer">
+                    Abrir PDF original
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!widget.content.embedPdf && (() => {
             // En el modal siempre mostrar contenido completo, independientemente del displayMode
             let content = widget.content.description || widget.preview || ''
             const hasHTML = content && /<img\s+src=/i.test(content)
@@ -364,14 +515,14 @@ export default function InfoModal({ widget, onClose }: InfoModalProps) {
             )
           })()}
 
-          {widget.content.additionalInfo && (
+          {!widget.content.embedPdf && widget.content.additionalInfo && (
             <div className="modal-additional">
               <p className="modal-additional-text">{widget.content.additionalInfo}</p>
             </div>
           )}
 
           {/* Archivos Adjuntos */}
-          {widget.content.attachments && widget.content.attachments.length > 0 && (
+          {!widget.content.embedPdf && widget.content.attachments && widget.content.attachments.length > 0 && (
             <div style={{
               marginTop: '2rem',
               padding: '1.5rem',
